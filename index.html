@@ -1,0 +1,3248 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d1117">
+<title>PinèScore</title>
+<style>
+  :root {
+    --bg:       #1e0f35;
+    --surface:  #2b1654;
+    --card:     #341a66;
+    --border:   #5a3a9a;
+    --gold:     #d4a843;
+    --gold-dim: #7a5f28;
+    --text:     #f0eaf8;
+    --muted:    #b89fd8;
+    --danger:   #f85149;
+    --success:  #3fb950;
+    --accent:   #7c3fd4;
+    --accent2:  #a855f7;
+    --radius:   12px;
+    --font:     'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; }
+
+  /* LAYOUT */
+  #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  #header { background: linear-gradient(135deg, #5a2db0 0%, #2b1654 100%); border-bottom: 1px solid #7c3fd4; padding: 12px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  #header .logo { font-size: 18px; font-weight: 700; color: var(--gold); letter-spacing: 2px; flex: 1; }
+  #header .subtitle { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  #content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+  #nav { background: #2b1654; border-top: 1px solid #5a3a9a; display: flex; flex-shrink: 0; safe-area-inset-bottom: env(safe-area-inset-bottom); padding-bottom: env(safe-area-inset-bottom); }
+  .nav-btn { flex: 1; padding: 10px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; border: none; background: none; color: var(--muted); font-size: 9px; font-family: var(--font); letter-spacing: 0.5px; cursor: pointer; transition: color 0.2s; }
+  .nav-btn.active { color: var(--gold); }
+  .nav-btn.active svg { filter: drop-shadow(0 0 4px rgba(212,168,67,0.5)); }
+  .nav-btn svg { width: 22px; height: 22px; }
+
+  /* SCREENS */
+  .screen { display: none; padding: 16px; }
+  .screen.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .card-title { font-size: 11px; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; font-weight: 600; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .section-title { font-size: 15px; font-weight: 600; color: var(--text); }
+
+  /* FORM ELEMENTS */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.5px; }
+  .field input, .field select, .field textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: var(--font); font-size: 15px; padding: 10px 12px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); }
+  .field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .field select option { background: var(--surface); }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; font-family: var(--font); font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.2s, transform 0.1s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, #a855f7, #7c3fd4); color: #fff; box-shadow: 0 2px 8px rgba(124,63,212,0.4); }
+  .btn-ghost { background: transparent; color: var(--gold); border: 1px solid var(--gold-dim); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-block { width: 100%; justify-content: center; }
+
+  /* SCALE / RATING */
+  .scale-row { display: flex; gap: 6px; }
+  .scale-btn { flex: 1; padding: 10px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .scale-btn.active { background: var(--gold); color: #0d1117; border-color: var(--gold); }
+
+  /* TAGS */
+  .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .tag-green { background: rgba(63,185,80,0.15); color: var(--success); }
+  .tag-gold { background: rgba(201,168,76,0.15); color: var(--gold); }
+  .tag-red { background: rgba(248,81,73,0.15); color: var(--danger); }
+  .tag-blue { background: rgba(31,111,235,0.15); color: #58a6ff; }
+
+  /* LIST ITEMS */
+  .list-item { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+  .list-item:last-child { border-bottom: none; }
+  .list-item-main { flex: 1; }
+  .list-item-title { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+  .list-item-sub { font-size: 12px; color: var(--muted); }
+
+  /* SCORE GRID */
+  .score-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .score-cell { aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .score-cell.X { background: rgba(201,168,76,0.2); color: var(--gold); border-color: var(--gold-dim); }
+  .score-cell.s10 { background: rgba(63,185,80,0.15); color: var(--success); }
+  .score-cell.s9 { background: rgba(63,185,80,0.08); color: #7ee787; }
+  .score-cell.s8 { color: var(--text); }
+  .score-cell.low { color: var(--danger); }
+  .score-cell.empty { color: var(--border); }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: none; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #2b1654; border-radius: 16px 16px 0 0; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px 16px 32px; border-top: 1px solid #5a3a9a; }
+  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+
+  /* PILL PICKER */
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .pill.active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
+
+  /* FAB */
+  .fab { position: fixed; right: 20px; bottom: calc(70px + env(safe-area-inset-bottom)); width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #a855f7, #7c3fd4); border: none; color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(124,63,212,0.6); cursor: pointer; z-index: 50; transition: transform 0.15s, box-shadow 0.15s; }
+  .fab:active { transform: scale(0.92); box-shadow: 0 2px 8px rgba(124,63,212,0.4); }
+  .fab-label { position: fixed; right: 80px; bottom: calc(84px + env(safe-area-inset-bottom)); background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 12px; padding: 5px 10px; border-radius: 6px; white-space: nowrap; z-index: 50; pointer-events: none; }
+
+  /* scale active */
+  .scale-btn.active { background: linear-gradient(135deg, #a855f7, #7c3fd4); color: #fff; border-color: #a855f7; }
+  .pill.active { background: rgba(168,85,247,0.2); border-color: var(--accent2); color: #d8b4fe; }
+
+  /* avatar */
+  .avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #7c3fd4, #4a1a99); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: var(--gold); margin: 0 auto 16px; box-shadow: 0 0 0 3px rgba(212,168,67,0.3); }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.4s; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+  .stat-value { font-size: 22px; font-weight: 700; color: var(--gold); }
+  .stat-label { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; margin-top: 2px; }
+
+  /* VOLÉE INPUT */
+  .volee-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .volee-num { font-size: 12px; color: var(--muted); width: 28px; text-align: center; }
+  .volee-cells { display: flex; gap: 4px; flex: 1; }
+  .volee-cell { flex: 1; height: 36px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); }
+  .volee-cell.filled { color: var(--text); border-color: var(--border); }
+  .volee-cell.filled.X { color: var(--gold); background: rgba(201,168,76,0.1); }
+  .volee-cell.filled.s10 { color: var(--success); }
+  .volee-total { font-size: 14px; font-weight: 700; color: var(--gold); width: 32px; text-align: center; }
+
+  /* ARROW PICKER MODAL */
+  .arrow-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .arrow-val { padding: 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); text-align: center; font-size: 18px; font-weight: 700; cursor: pointer; }
+  .arrow-val:active { opacity: 0.7; }
+  .arrow-val.X { color: var(--gold); border-color: var(--gold-dim); background: rgba(201,168,76,0.08); }
+  .arrow-val.v10 { color: var(--success); }
+  .arrow-val.miss { color: var(--danger); }
+
+  /* MENTAL COACH */
+  .material-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .material-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .material-icon.pdf { background: rgba(248,81,73,0.1); }
+  .material-icon.audio { background: rgba(201,168,76,0.1); }
+  .material-info { flex: 1; }
+  .material-name { font-size: 14px; font-weight: 500; }
+  .material-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* OBIETTIVI */
+  .obiettivo-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .obiettivo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .obiettivo-title { font-size: 14px; font-weight: 500; }
+  .obiettivo-sub { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+
+  /* PROGRESS BAR */
+
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* CHECKBOX */
+  .check-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .check-box { width: 20px; height: 20px; border-radius: 4px; border: 2px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+  .check-box.checked { background: var(--gold); border-color: var(--gold); }
+  .check-label { font-size: 14px; color: var(--text); }
+
+  /* SEQUENZA DI TIRO */
+  .seq-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; position: relative; }
+  .seq-num { font-size: 11px; color: var(--accent2); font-weight: 700; width: 20px; text-align: center; flex-shrink: 0; }
+  .seq-text { flex: 1; font-size: 14px; color: var(--text); padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: text; outline: none; min-height: 36px; }
+  .seq-text:focus { border-color: var(--accent2); }
+  .seq-drag { color: var(--muted); cursor: grab; padding: 4px; flex-shrink: 0; touch-action: none; }
+  .seq-drag:active { cursor: grabbing; }
+  .seq-del { color: var(--muted); background: none; border: none; font-size: 16px; padding: 4px 6px; cursor: pointer; flex-shrink: 0; line-height: 1; }
+  .seq-del:active { color: var(--danger); }
+  .seq-insert { display: flex; align-items: center; gap: 6px; margin: 2px 0 2px 28px; opacity: 0; transition: opacity 0.2s; }
+  .seq-insert:hover { opacity: 1; }
+  .seq-insert-line { flex: 1; height: 1px; background: var(--border); }
+  .seq-insert-btn { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .seq-insert-btn:active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .seq-item.dragging { opacity: 0.4; }
+  .seq-item.drag-over { border-top: 2px solid var(--accent2); }
+
+  /* MAGNIFIER LOUPE */
+  #loupe-container { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+  #loupe { position:absolute; width:120px; height:120px; border-radius:50%; border:3px solid var(--gold); box-shadow:0 0 0 1px rgba(0,0,0,0.3), 0 6px 20px rgba(0,0,0,0.7); pointer-events:none; display:none; z-index:10; overflow:hidden; background:#fff; }
+  #loupe canvas { position:absolute; top:0; left:0; }
+  #loupe-cross { position:absolute; inset:0; pointer-events:none; }
+
+  /* TARGET SCORING */
+  .hit-marker { pointer-events: none; }
+  .volee-arrow-cell { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .volee-arrow-cell.filled-X { background: var(--gold); color: #1e0f35; border-color: var(--gold); }
+  .volee-arrow-cell.filled-10 { background: var(--success); color: #fff; border-color: var(--success); }
+  .volee-arrow-cell.filled-9, .volee-arrow-cell.filled-8 { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .volee-arrow-cell.filled-7, .volee-arrow-cell.filled-6 { background: #3a7bd4; color: #fff; border-color: #3a7bd4; }
+  .volee-arrow-cell.filled-5, .volee-arrow-cell.filled-4, .volee-arrow-cell.filled-3 { background: #555; color: #fff; border-color: #555; }
+  .volee-arrow-cell.filled-M { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .volee-arrow-cell.active { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,168,67,0.3); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 3px rgba(212,168,67,0.3)} 50%{box-shadow:0 0 0 5px rgba(212,168,67,0.1)} }
+  .turno-row { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; font-size:13px; }
+  .turno-row.active { border-color: var(--gold); }
+  .arrow-val { border-radius: 6px; border: 1px solid var(--border); background: var(--bg); text-align: center; font-size: 13px; font-weight: 700; cursor: pointer; padding: 10px; }
+  .arrow-val:active { opacity: 0.7; }
+  .arrow-val.X { color: var(--gold); border-color: var(--gold-dim); background: rgba(212,168,67,0.08); }
+  .arrow-val.v10 { color: var(--success); }
+  .arrow-val.miss { color: var(--danger); }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state svg { margin-bottom: 12px; opacity: 0.3; }
+  .empty-state p { font-size: 14px; }
+
+  /* EQUIPMENT */
+  .comp-tab { padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 12px; white-space: nowrap; cursor: pointer; flex-shrink: 0; font-family: var(--font); transition: all 0.15s; }
+  .comp-tab.active { background: linear-gradient(135deg,#a855f7,#7c3fd4); color: #fff; border-color: #a855f7; }
+  .comp-panel { display: none; }
+  .comp-panel.active { display: block; }
+  .foto-slot { margin-bottom: 14px; border-radius: 10px; border: 2px dashed var(--border); overflow: hidden; cursor: pointer; min-height: 140px; display: flex; align-items: center; justify-content: center; background: var(--bg); transition: border-color 0.2s; }
+  .foto-slot:active { border-color: var(--accent2); }
+  .foto-preview { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; padding: 20px; }
+  .foto-preview img { width: 100%; height: 180px; object-fit: cover; border-radius: 8px; }
+  .storico-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .storico-item:last-child { border-bottom: none; }
+  .storico-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .storico-item-comp { font-size: 11px; color: var(--accent2); font-weight: 600; }
+  .storico-item-data { font-size: 11px; color: var(--muted); }
+  .storico-item-desc { font-size: 13px; color: var(--text); margin-bottom: 2px; }
+  .storico-item-ris { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <div id="header">
+    <div>
+      <div class="logo">◎ PinèScore</div>
+      <div class="subtitle">by David Giovannini</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- SCREEN: HOME / ARCIERE -->
+    <div class="screen active" id="screen-home">
+      <div class="card" style="text-align:center;padding:24px 16px;">
+        <div class="avatar" id="avatar-initials">DG</div>
+        <div style="font-size:18px;font-weight:700;" id="profile-name">David Giovannini</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="profile-club">Compound — FITARCO</div>
+        <div style="margin-top:16px;">
+          <span class="tag tag-gold" id="profile-cat">Compound Maschile</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Scheda Arciere</div>
+        <div class="field"><label>Nome e Cognome</label><input type="text" id="f-nome" value="David Giovannini"></div>
+        <div class="field"><label>Società / Club</label><input type="text" id="f-club" value=""></div>
+        <div class="field"><label>Categoria FITARCO</label>
+          <select id="f-cat">
+            <optgroup label="── Compound ──">
+              <option>Compound Maschile</option>
+              <option>Compound Femminile</option>
+            </optgroup>
+            <optgroup label="── Olimpico ──">
+              <option>Olimpico Maschile</option>
+              <option>Olimpico Femminile</option>
+            </optgroup>
+            <optgroup label="── Arco Nudo ──">
+              <option>Arco Nudo Maschile</option>
+              <option>Arco Nudo Femminile</option>
+            </optgroup>
+            <optgroup label="── Istintivo ──">
+              <option>Istintivo Maschile</option>
+              <option>Istintivo Femminile</option>
+            </optgroup>
+            <optgroup label="── Classi età ──">
+              <option>Allievi Maschile</option>
+              <option>Allievi Femminile</option>
+              <option>Ragazzi Maschile</option>
+              <option>Ragazzi Femminile</option>
+              <option>Junior Maschile</option>
+              <option>Junior Femminile</option>
+              <option>Senior Maschile</option>
+              <option>Senior Femminile</option>
+              <option>Master Maschile</option>
+              <option>Master Femminile</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="field"><label>Anno di nascita</label><input type="number" id="f-anno" placeholder="1985"></div>
+        <div class="field"><label>Tessera FITARCO</label><input type="text" id="f-tessera" placeholder="TN-XXXX"></div>
+        <div class="field"><label>Arco / Setup attuale</label><input type="text" id="f-setup" placeholder="es. Hoyt Carbon RX-8, 60lb"></div>
+        <div class="field"><label>Punta / Punte usate</label><input type="text" id="f-punte" placeholder="es. Easton X10 330"></div>
+        <div class="field"><label>Note attrezzatura</label><textarea id="f-note-attrezzatura" placeholder="Mirino, stabilizzatori, release..."></textarea></div>
+        <button class="btn btn-primary btn-block" onclick="saveProfile()">Salva Scheda</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Statistiche Stagione</div>
+        <div class="stats-row">
+          <div class="stat-box"><div class="stat-value" id="stat-gare">0</div><div class="stat-label">GARE</div></div>
+          <div class="stat-box"><div class="stat-value" id="stat-best">—</div><div class="stat-label">BEST</div></div>
+          <div class="stat-box"><div class="stat-value" id="stat-avg">—</div><div class="stat-label">MEDIA</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: GARE -->
+    <div class="screen" id="screen-gare">
+      <div class="section-header">
+        <div class="section-title">Gare</div>
+      </div>
+      <button class="fab" onclick="openModal('modal-nuova-gara')" title="Nuova gara">+</button>
+
+      <div id="gare-list">
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          <p>Nessuna gara registrata.<br>Inizia aggiungendo la prima.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: MENTAL COACH -->
+    <div class="screen" id="screen-mental">
+      <div class="section-header">
+        <div class="section-title">Mental Coach</div>
+      </div>
+      <button class="fab" onclick="openModal('modal-add-material')" title="Aggiungi materiale">+</button>
+
+      <!-- ROUTINE PRE-GARA -->
+      <div class="card">
+        <div class="card-title">Routine Pre-Gara</div>
+        <div id="routine-list">
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Riscaldamento fisico (15 min)</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Visualizzazione della gara</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Respirazione diaframmatica</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Verifica attrezzatura</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Frecce di prova</span></div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="new-routine-item" placeholder="Aggiungi voce..." style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 12px;outline:none;">
+          <button class="btn btn-ghost btn-sm" onclick="addRoutineItem()">+</button>
+        </div>
+      </div>
+
+      <!-- ESERCIZI MENTALI -->
+      <div class="card">
+        <div class="card-title">Esercizi & Note Mentali</div>
+        <div class="field"><label>Parola chiave / cue tecnico</label><input type="text" id="mental-cue" placeholder="es. 'scapola', 'muro', 'vuoto'"></div>
+        <div class="field"><label>Obiettivo mentale della sessione</label><textarea id="mental-obj" placeholder="Descrivi l'approccio mentale che vuoi mantenere oggi..."></textarea></div>
+        <div class="field"><label>Cosa faccio se perdo il focus</label><textarea id="mental-reset" placeholder="La mia procedura di reset..."></textarea></div>
+        <button class="btn btn-primary btn-sm" onclick="saveMentalNotes()">Salva Note</button>
+      </div>
+
+      <!-- MATERIALI -->
+      <div class="card">
+        <div class="card-title">Materiali</div>
+        <div id="materials-list">
+          <div class="material-item">
+            <div class="material-icon audio">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+            </div>
+            <div class="material-info"><div class="material-name">Respirazione pre-shot</div><div class="material-meta">Audio · 5 min</div></div>
+            <span class="tag tag-gold">Audio</span>
+          </div>
+          <div class="material-item">
+            <div class="material-icon pdf">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f85149" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="material-info"><div class="material-name">Mental Performance - FITARCO</div><div class="material-meta">PDF · Documento</div></div>
+            <span class="tag tag-red">PDF</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: OBIETTIVI -->
+    <div class="screen" id="screen-obiettivi">
+      <div class="section-header">
+        <div class="section-title">Obiettivi</div>
+      </div>
+      <button class="fab" onclick="openModal('modal-add-obiettivo')" title="Nuovo obiettivo">+</button>
+
+      <!-- GOAL SETTING PINÈ -->
+      <div class="card">
+        <div class="card-title">📋 Scheda Goal Setting</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Definisci obiettivi chiari e raggiungibili considerando aspetti tecnici, fisici e mentali.</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr>
+                <th style="background:var(--accent);color:#fff;padding:8px;text-align:left;border-radius:6px 0 0 0;width:35%;">Obiettivo</th>
+                <th style="background:var(--accent);color:#fff;padding:8px;text-align:center;">Cosa posso fare per raggiungerlo<br><span style="font-weight:400;font-size:10px;">tecnico · fisico · mentale</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:0;vertical-align:top;border:1px solid var(--border);">
+                  <div style="background:rgba(31,111,235,0.08);padding:8px;font-size:11px;font-weight:600;color:#58a6ff;border-bottom:1px solid var(--border);">BREVE TERMINE</div>
+                  <textarea id="obj-breve-obj" placeholder="es. Stabilizzare la routine di sgancio..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;padding:8px;min-height:70px;outline:none;resize:none;"></textarea>
+                </td>
+                <td style="padding:0;vertical-align:top;border:1px solid var(--border);">
+                  <textarea id="obj-breve-come" placeholder="Tecnico: ...&#10;Fisico: ...&#10;Mentale: ..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;padding:8px;min-height:95px;outline:none;resize:none;"></textarea>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0;vertical-align:top;border:1px solid var(--border);">
+                  <div style="background:rgba(201,168,76,0.08);padding:8px;font-size:11px;font-weight:600;color:var(--gold);border-bottom:1px solid var(--border);">MEDIO TERMINE</div>
+                  <textarea id="obj-medio-obj" placeholder="es. Superare 680 pt outdoor..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;padding:8px;min-height:70px;outline:none;resize:none;"></textarea>
+                </td>
+                <td style="padding:0;vertical-align:top;border:1px solid var(--border);">
+                  <textarea id="obj-medio-come" placeholder="Tecnico: ...&#10;Fisico: ...&#10;Mentale: ..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;padding:8px;min-height:95px;outline:none;resize:none;"></textarea>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0;vertical-align:top;border:1px solid var(--border);border-radius:0 0 0 6px;">
+                  <div style="background:rgba(63,185,80,0.08);padding:8px;font-size:11px;font-weight:600;color:var(--success);border-bottom:1px solid var(--border);">LUNGO TERMINE</div>
+                  <textarea id="obj-lungo-obj" placeholder="es. Titolo provinciale Compound..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;padding:8px;min-height:70px;outline:none;resize:none;"></textarea>
+                </td>
+                <td style="padding:0;vertical-align:top;border:1px solid var(--border);border-radius:0 0 6px 0;">
+                  <textarea id="obj-lungo-come" placeholder="Tecnico: ...&#10;Fisico: ...&#10;Mentale: ..." style="width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;padding:8px;min-height:95px;outline:none;resize:none;"></textarea>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="saveGoalSetting()">Salva Goal Setting</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Obiettivi per Gara</div>
+        <div id="obiettivi-gara">
+          <div style="color:var(--muted);font-size:13px;padding:8px 0;">Nessun obiettivo. Aggiungi tramite "+".</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: ROUTINE & ATTIVAZIONE -->
+    <div class="screen" id="screen-routine">
+      <div class="section-title" style="margin-bottom:14px;">Routine & Attivazione</div>
+
+      <!-- ROUTINE PRE-GARA -->
+      <div class="card">
+        <div class="card-title">⚡ Routine Pre-Gara</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Checklist da completare prima di ogni gara</div>
+        <div id="routine-pregara-list">
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Arrivo impianto (almeno 60 min prima)</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Montaggio e verifica attrezzatura</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Riscaldamento fisico (15 min)</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Visualizzazione della gara</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Respirazione diaframmatica</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Frecce di prova con focus sul processo</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Attivazione parola chiave / cue</span></div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="new-pregara-item" placeholder="Aggiungi voce..." style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 12px;outline:none;">
+          <button class="btn btn-ghost btn-sm" onclick="addCheckItem('routine-pregara-list','new-pregara-item')">+</button>
+        </div>
+      </div>
+
+      <!-- SEQUENZA DI TIRO -->
+      <div class="card">
+        <div class="card-title">🎯 Sequenza di Tiro</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Tieni premuto e trascina per riordinare · Tocca + tra i passi per inserirne uno nuovo</div>
+        <div id="seq-tiro-list"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" id="new-seq-item" placeholder="Nuovo passo..." style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 12px;outline:none;" onkeydown="if(event.key==='Enter')appendSeqItem()">
+          <button class="btn btn-primary btn-sm" onclick="appendSeqItem()">Aggiungi</button>
+        </div>
+        <button class="btn btn-ghost btn-sm btn-block" style="margin-top:8px;" onclick="saveSeqTiro()">💾 Salva sequenza</button>
+      </div>
+
+      <!-- ATTIVAZIONE -->
+      <div class="card">
+        <div class="card-title">🧠 Attivazione Mentale</div>
+        <div class="field"><label>Livello di attivazione ideale (1=calmo · 10=carico)</label>
+          <div class="scale-row" id="scale-attivazione" style="flex-wrap:wrap;gap:4px;">
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,1)">1</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,2)">2</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,3)">3</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,4)">4</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,5)">5</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,6)">6</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,7)">7</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,8)">8</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,9)">9</button>
+            <button class="scale-btn" style="font-size:11px;" onclick="setScale('scale-attivazione',this,10)">10</button>
+          </div>
+        </div>
+        <div class="field"><label>La mia parola chiave / cue di attivazione</label>
+          <input type="text" id="attiv-cue" placeholder="es. 'scapola', 'vuoto', 'muro'"></div>
+        <div class="field"><label>Tecnica di attivazione che uso</label>
+          <div class="pill-row" id="attiv-tecnica" style="margin-bottom:8px;">
+            <button class="pill" onclick="setPill('attiv-tecnica',this)">Respirazione</button>
+            <button class="pill" onclick="setPill('attiv-tecnica',this)">Visualizzazione</button>
+            <button class="pill" onclick="setPill('attiv-tecnica',this)">Musica</button>
+            <button class="pill" onclick="setPill('attiv-tecnica',this)">Movimento</button>
+            <button class="pill" onclick="setPill('attiv-tecnica',this)">Altra</button>
+          </div>
+        </div>
+        <div class="field"><label>Note sulla mia attivazione</label>
+          <textarea id="attiv-note" placeholder="Descrivi cosa fai per raggiungere il tuo stato ottimale..."></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveAttivazione()">Salva</button>
+      </div>
+
+      <!-- PROCEDURA DI RESET -->
+      <div class="card">
+        <div class="card-title">🔄 Procedura di Reset</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Cosa faccio quando perdo il focus o commetto un errore</div>
+        <div id="reset-list">
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Abbasso l'arco</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Respiro profondo</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Parola chiave di reset</span></div>
+          <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">Riporto attenzione sul processo</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="field" style="margin-bottom:0;"><label>La mia parola di reset</label>
+          <input type="text" id="reset-word" placeholder="es. 'avanti', 'prossima', 'ok'">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" id="new-reset-item" placeholder="Aggiungi passo..." style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 12px;outline:none;">
+          <button class="btn btn-ghost btn-sm" onclick="addCheckItem('reset-list','new-reset-item')">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: ATTREZZATURA -->
+    <div class="screen" id="screen-attrez">
+      <div class="section-title" style="margin-bottom:6px;">Setup Attrezzatura</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Foto e parametri tecnici di ogni componente</div>
+
+      <!-- TABS componenti -->
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none;">
+        <button class="comp-tab active" onclick="showComp('arco',this)">🏹 Arco</button>
+        <button class="comp-tab" onclick="showComp('flettenti',this)">↕ Flettenti</button>
+        <button class="comp-tab" onclick="showComp('rest',this)">⚙ Rest</button>
+        <button class="comp-tab" onclick="showComp('stab-ant',this)">⬛ Stab. Ant.</button>
+        <button class="comp-tab" onclick="showComp('stab-post',this)">⬜ Stab. Post.</button>
+        <button class="comp-tab" onclick="showComp('mirino',this)">🎯 Mirino</button>
+        <button class="comp-tab" onclick="showComp('sgancio',this)">✋ Sgancio</button>
+        <button class="comp-tab" onclick="showComp('frecce',this)">➡ Frecce</button>
+      </div>
+
+      <!-- COMPONENTE: ARCO -->
+      <div class="comp-panel active" id="comp-arco">
+        <div class="card">
+          <div class="card-title">🏹 Arco</div>
+          <div class="foto-slot" onclick="triggerPhoto('arco-foto')">
+            <input type="file" id="arco-foto" accept="image/*" style="display:none" onchange="loadPhoto(this,'arco-foto-preview','arco')">
+            <div id="arco-foto-preview" class="foto-preview">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+          <div class="field"><label>Marca / Modello</label><input type="text" id="arco-marca" placeholder="es. Hoyt Carbon RX-8 Ultra"></div>
+          <div class="field"><label>Anno acquisto</label><input type="text" id="arco-anno" placeholder="es. 2023"></div>
+          <div class="field"><label>Colore / Configurazione</label><input type="text" id="arco-colore" placeholder="es. Black/Silver"></div>
+          <div class="field"><label>Note generali</label><textarea id="arco-note" placeholder="Caratteristiche, impressioni..."></textarea></div>
+          <button class="btn btn-primary btn-sm" onclick="saveComp('arco')">Salva</button>
+        </div>
+      </div>
+
+      <!-- COMPONENTE: FLETTENTI -->
+      <div class="comp-panel" id="comp-flettenti">
+        <div class="card">
+          <div class="card-title">↕ Flettenti</div>
+          <div class="foto-slot" onclick="triggerPhoto('flet-foto')">
+            <input type="file" id="flet-foto" accept="image/*" style="display:none" onchange="loadPhoto(this,'flet-foto-preview','flettenti')">
+            <div id="flet-foto-preview" class="foto-preview">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+          <div class="field"><label>Marca / Modello</label><input type="text" id="flet-marca" placeholder="es. Hoyt SVX 38"></div>
+          <div class="field"><label>Poundage (lb)</label><input type="number" id="flet-poundage" placeholder="es. 60"></div>
+          <div class="field"><label>Lunghezza ATA (pollici)</label><input type="text" id="flet-ata" placeholder="es. 38"></div>
+          <div class="field"><label>Brace height (pollici)</label><input type="text" id="flet-brace" placeholder="es. 6.5"></div>
+          <div class="field"><label>Let-off (%)</label><input type="text" id="flet-letoff" placeholder="es. 80"></div>
+          <div class="field"><label>Draw length (pollici)</label><input type="text" id="flet-draw" placeholder="es. 28.5"></div>
+          <div class="field"><label>Corda — marca/tipo</label><input type="text" id="flet-corda" placeholder="es. Winner's Choice"></div>
+          <div class="field"><label>Note</label><textarea id="flet-note" placeholder="Regolazioni, sensazioni..."></textarea></div>
+          <button class="btn btn-primary btn-sm" onclick="saveComp('flettenti')">Salva</button>
+        </div>
+      </div>
+
+      <!-- COMPONENTE: REST / BOTTONE -->
+      <div class="comp-panel" id="comp-rest">
+        <div class="card">
+          <div class="card-title">⚙ Rest / Bottone</div>
+          <div class="foto-slot" onclick="triggerPhoto('rest-foto')">
+            <input type="file" id="rest-foto" accept="image/*" style="display:none" onchange="loadPhoto(this,'rest-foto-preview','rest')">
+            <div id="rest-foto-preview" class="foto-preview">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+          <div class="field"><label>Tipo</label>
+            <div class="pill-row" id="rest-tipo" style="margin-bottom:8px;">
+              <button class="pill" onclick="setPill('rest-tipo',this)">Bisupport</button>
+              <button class="pill" onclick="setPill('rest-tipo',this)">Dropaway</button>
+              <button class="pill" onclick="setPill('rest-tipo',this)">Capture</button>
+            </div>
+          </div>
+          <div class="field"><label>Marca / Modello</label><input type="text" id="rest-marca" placeholder="es. QAD Ultra Rest HDX"></div>
+          <div class="field"><label>Altezza freccia (mm)</label><input type="text" id="rest-altezza" placeholder="es. 13.5"></div>
+          <div class="field"><label>Offset laterale (mm)</label><input type="text" id="rest-offset" placeholder="es. +2"></div>
+          <div class="field"><label>Bottone — marca/rigidità</label><input type="text" id="rest-bottone" placeholder="es. Shibuya DX Plunger, medio"></div>
+          <div class="field"><label>Note</label><textarea id="rest-note" placeholder="Taratura, regolazioni..."></textarea></div>
+          <button class="btn btn-primary btn-sm" onclick="saveComp('rest')">Salva</button>
+        </div>
+      </div>
+
+      <!-- COMPONENTE: STABILIZZATORE ANTERIORE -->
+      <div class="comp-panel" id="comp-stab-ant">
+        <div class="card">
+          <div class="card-title">⬛ Stabilizzatore Anteriore</div>
+          <div class="foto-slot" onclick="triggerPhoto('stab-ant-foto')">
+            <input type="file" id="stab-ant-foto" accept="image/*" style="display:none" onchange="loadPhoto(this,'stab-ant-foto-preview','stab-ant')">
+            <div id="stab-ant-foto-preview" class="foto-preview">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+          <div class="field"><label>Marca / Modello</label><input type="text" id="stab-ant-marca" placeholder="es. Axcel Achieve Carbon 27&quot;"></div>
+          <div class="field"><label>Lunghezza (pollici)</label><input type="number" id="stab-ant-lung" placeholder="es. 27"></div>
+          <div class="field"><label>Peso (once)</label><input type="text" id="stab-ant-peso" placeholder="es. 6"></div>
+          <div class="field"><label>V-bar — angolo (°)</label><input type="text" id="stab-ant-vbar" placeholder="es. 15° verso il basso"></div>
+          <div class="field"><label>Damper — tipo/marca</label><input type="text" id="stab-ant-damper" placeholder="es. Bee Stinger Doinker"></div>
+          <div class="field"><label>Note</label><textarea id="stab-ant-note" placeholder="Bilanciamento, sensazioni..."></textarea></div>
+          <button class="btn btn-primary btn-sm" onclick="saveComp('stab-ant')">Salva</button>
+        </div>
+      </div>
+
+      <!-- COMPONENTE: STABILIZZATORE POSTERIORE -->
+      <div class="comp-panel" id="comp-stab-post">
+        <div class="card">
+          <div class="card-title">⬜ Stabilizzatore Posteriore</div>
+          <div class="foto-slot" onclick="triggerPhoto('stab-post-foto')">
+            <input type="file" id="stab-post-foto" accept="image/*" style="display:none" onchange="loadPhoto(this,'stab-post-foto-preview','stab-post')">
+            <div id="stab-post-foto-preview" class="foto-preview">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+          <div class="field"><label>Marca / Modello</label><input type="text" id="stab-post-marca" placeholder="es. Axcel Achieve Carbon 12&quot;"></div>
+          <div class="field"><label>Lunghezza (pollici)</label><input type="number" id="stab-post-lung" placeholder="es. 12"></div>
+          <div class="field"><label>Peso (once)</label><input type="text" id="stab-post-peso" placeholder="es. 10"></div>
+          <div class="field"><label>Angolo (°)</label><input type="text" id="stab-post-angolo" placeholder="es. 45°"></div>
+          <div class="field"><label>Damper — tipo/marca</label><input type="text" id="stab-post-damper" placeholder="es. LimbSaver"></div>
+          <div class="field"><label>Note</label><textarea id="stab-post-note" placeholder="Bilanciamento, configurazione..."></textarea></div>
+          <button class="btn btn-primary btn-sm" onclick="saveComp('stab-post')">Salva</button>
+        </div>
+      </div>
+
+      <!-- COMPONENTE: MIRINO -->
+      <div class="comp-panel" id="comp-mirino">
+        <div class="card">
+          <div class="card-title">🎯 Mirino</div>
+          <div class="foto-slot" onclick="triggerPhoto('mir-foto')">
+            <input type="file" id="mir-foto" accept="image/*" style="display:none" onchange="loadPhoto(this,'mir-foto-preview','mirino')">
+            <div id="mir-foto-preview" class="foto-preview">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+          <div class="field"><label>Marca / Modello</label><input type="text" id="mir-marca" placeholder="es. Axcel ArmorTech Pro 5"></div>
+          <div class="field"><label>Tipo lente</label><input type="text" id="mir-lente" placeholder="es. 6x, 4x, 8x"></div>
+          <div class="field"><label>Diametro pin (pollici)</label><input type="text" id="mir-pin" placeholder="es. .019"></div>
+          <div class="field"><label>Posizione 18m (su/giù mm)</label><input type="text" id="mir-18m" placeholder="es. +45mm"></div>
+          <div class="field"><label>Posizione 50m (su/giù mm)</label><input type="text" id="mir-50m" placeholder="es. -12mm"></div>
+          <div class="field"><label>Posizione 70m (su/giù mm)</label><input type="text" id="mir-70m" placeholder="es. -38mm"></div>
+          <div class="field"><label>Correzione laterale</label><input type="text" id="mir-lat" placeholder="es. +2mm dx"></div>
+          <div class="field"><label>Note</label><textarea id="mir-note" placeholder="Livella, luce..."></textarea></div>
+          <button class="btn btn-primary btn-sm" onclick="saveComp('mirino')">Salva</button>
+        </div>
+      </div>
+
+      <!-- COMPONENTE: SGANCIO / PATELLA -->
+      <div class="comp-panel" id="comp-sgancio">
+        <div class="card">
+          <div class="card-title">✋ Sgancio / Patella</div>
+          <div class="foto-slot" onclick="triggerPhoto('sgan-foto')">
+            <input type="file" id="sgan-foto" accept="image/*" style="display:none" onchange="loadPhoto(this,'sgan-foto-preview','sgancio')">
+            <div id="sgan-foto-preview" class="foto-preview">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+          <div class="field"><label>Tipo sgancio</label>
+            <div class="pill-row" id="sgan-tipo" style="margin-bottom:8px;">
+              <button class="pill" onclick="setPill('sgan-tipo',this)">Wrist (cinturino)</button>
+              <button class="pill" onclick="setPill('sgan-tipo',this)">Thumb / Handheld</button>
+              <button class="pill" onclick="setPill('sgan-tipo',this)">Back tension</button>
+            </div>
+          </div>
+          <div class="field"><label>Marca / Modello</label><input type="text" id="sgan-marca" placeholder="es. Carter Atachment 2, Carter Evolution"></div>
+          <div class="field"><label>Lunghezza (cm)</label><input type="text" id="sgan-lung" placeholder="es. 8.5"></div>
+          <div class="field"><label>Trigger — sensibilità</label><input type="text" id="sgan-trigger" placeholder="es. leggero / medio / pesante"></div>
+          <div class="field"><label>Patella — marca/misura</label><input type="text" id="sgan-patella" placeholder="es. Neet NW-1, taglia M"></div>
+          <div class="field"><label>Note tecnica sgancio</label><textarea id="sgan-note" placeholder="Posizione pollice, pressione, timing..."></textarea></div>
+          <button class="btn btn-primary btn-sm" onclick="saveComp('sgancio')">Salva</button>
+        </div>
+      </div>
+
+      <!-- COMPONENTE: FRECCE -->
+      <div class="comp-panel" id="comp-frecce">
+        <div class="card">
+          <div class="card-title">➡ Frecce</div>
+          <div class="foto-slot" onclick="triggerPhoto('frec-foto')">
+            <input type="file" id="frec-foto" accept="image/*" style="display:none" onchange="loadPhoto(this,'frec-foto-preview','frecce')">
+            <div id="frec-foto-preview" class="foto-preview">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+          <div class="field"><label>Marca / Modello</label><input type="text" id="frec-marca" placeholder="es. Easton X10, Gold Tip Velocity Pro"></div>
+          <div class="field"><label>Spine</label><input type="text" id="frec-spine" placeholder="es. 330, 400"></div>
+          <div class="field"><label>Lunghezza (pollici)</label><input type="text" id="frec-lung" placeholder="es. 28.5"></div>
+          <div class="field"><label>Peso totale (grani)</label><input type="text" id="frec-peso" placeholder="es. 385"></div>
+          <div class="field"><label>Punte — peso (grani)</label><input type="text" id="frec-punte" placeholder="es. 100"></div>
+          <div class="field"><label>Impennaggio — tipo/misura</label><input type="text" id="frec-imp" placeholder="es. AAE Max Stealth 1.75&quot;"></div>
+          <div class="field"><label>Nock — tipo</label><input type="text" id="frec-nock" placeholder="es. Easton G nock, rosso"></div>
+          <div class="field"><label>Note</label><textarea id="frec-note" placeholder="Parafinatura, taratura gruppi..."></textarea></div>
+          <button class="btn btn-primary btn-sm" onclick="saveComp('frecce')">Salva</button>
+        </div>
+      </div>
+
+      <!-- STORICO MODIFICHE -->
+      <div class="card" style="margin-top:8px;">
+        <div class="card-title" style="margin-bottom:10px;">📋 Storico Modifiche Setup</div>
+        <div id="storico-list">
+          <div class="empty-state" style="padding:20px;">
+            <p>Nessuna modifica registrata ancora.</p>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="field"><label>Foto modifica (opzionale)</label>
+          <div class="foto-slot" onclick="triggerPhoto('mod-foto-input')" style="min-height:80px;">
+            <input type="file" id="mod-foto-input" accept="image/*" style="display:none" onchange="loadModFoto(this)">
+            <div id="mod-foto-preview" class="foto-preview" style="padding:12px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Tocca per aggiungere foto</span>
+            </div>
+          </div>
+        </div>
+        <div class="field"><label>Data modifica</label><input type="date" id="mod-data"></div>
+        <div class="field"><label>Componente modificato</label>
+          <select id="mod-comp">
+            <option>Arco</option><option>Flettenti</option><option>Rest/Bottone</option>
+            <option>Stabilizzatore anteriore</option><option>Stabilizzatore posteriore</option>
+            <option>Mirino</option><option>Sgancio/Patella</option><option>Frecce</option><option>Altro</option>
+          </select>
+        </div>
+        <div class="field"><label>Descrizione modifica</label>
+          <textarea id="mod-desc" placeholder="es. Aumentato poundage a 62lb, spostato mirino +3mm..."></textarea>
+        </div>
+        <div class="field"><label>Motivo / risultato</label>
+          <textarea id="mod-risultato" placeholder="es. Gruppi migliorati a 50m, verificare a 70m..."></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveModifica()">Registra Modifica</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- NAV -->
+  <nav id="nav">
+    <button class="nav-btn active" onclick="showScreen('home',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Arciere
+    </button>
+    <button class="nav-btn" onclick="showScreen('gare',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      Gare
+    </button>
+    <button class="nav-btn" onclick="showScreen('mental',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      Mental
+    </button>
+    <button class="nav-btn" onclick="showScreen('obiettivi',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Obiettivi
+    </button>
+    <button class="nav-btn" onclick="showScreen('routine',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Routine
+    </button>
+    <button class="nav-btn" onclick="showScreenExt('attrez',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+        <path d="M5 19 Q3 12 5 5" stroke-linecap="round"/>
+        <path d="M5 5 Q14 3 19 5" stroke-linecap="round"/>
+        <path d="M5 19 Q14 21 19 19" stroke-linecap="round"/>
+        <line x1="5" y1="12" x2="19" y2="12" stroke-dasharray="2 2"/>
+        <line x1="17" y1="10" x2="21" y2="12"/>
+        <line x1="17" y1="14" x2="21" y2="12"/>
+      </svg>
+      Arco
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL: NUOVA GARA -->
+<div class="modal-overlay" id="modal-nuova-gara" onclick="closeModalOut(event,'modal-nuova-gara')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuova Gara</div>
+
+    <div class="field"><label>Data</label><input type="date" id="g-data"></div>
+    <div class="field"><label>Luogo / Impianto</label><input type="text" id="g-luogo" placeholder="es. Poligono di Trento"></div>
+    <div class="field"><label>Tipologia</label>
+      <select id="g-tipo">
+        <option>Targa Indoor 18m</option>
+        <option>Targa Indoor 25m</option>
+        <option>Targa Outdoor 50m</option>
+        <option selected>Targa Outdoor 70m</option>
+        <option>Campo</option>
+        <option>3D</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field">
+        <label>Tipo arco</label>
+        <select id="g-arco" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:10px 12px;outline:none;width:100%;">
+          <option value="">— tipo —</option>
+          <option>Compound</option>
+          <option>Olimpico</option>
+          <option>Arco Nudo</option>
+          <option>Istintivo</option>
+          <option>Longbow</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Classe età</label>
+        <select id="g-eta" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:10px 12px;outline:none;width:100%;">
+          <option value="">— classe —</option>
+          <option>Cuccioli</option>
+          <option>Giovanissimi</option>
+          <option>Allievi</option>
+          <option>Ragazzi</option>
+          <option>Junior</option>
+          <option>Senior</option>
+          <option>Master</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Condizioni meteo</label>
+      <select id="g-meteo">
+        <option>☀️ Sereno</option>
+        <option>⛅ Parzialmente nuvoloso</option>
+        <option>🌧️ Pioggia</option>
+        <option>💨 Vento forte</option>
+        <option>🌡️ Caldo intenso</option>
+      </select>
+    </div>
+    <div class="field"><label>Vento (direzione / forza)</label><input type="text" id="g-vento" placeholder="es. 3 m/s da destra"></div>
+
+    <div style="margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:12px;">Configurazione Gara</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div class="field" style="margin:0;">
+          <label>Frecce per volée</label>
+          <div class="pill-row" id="cfg-frecce" style="gap:6px;margin-top:6px;">
+            <button class="pill active" onclick="setCfgFrecce(3,this)">3 frecce</button>
+            <button class="pill" onclick="setCfgFrecce(6,this)">6 frecce</button>
+            <button class="pill" onclick="setCfgFrecce(2,this)">2 frecce</button>
+          </div>
+        </div>
+        <div class="field" style="margin:0;">
+          <label>Tipo bersaglio</label>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+            <button class="pill active" id="tgt-full" onclick="setCfgTarget('full',this)" style="text-align:left;">⬤ Intero (1–10)</button>
+            <button class="pill" id="tgt-spot" onclick="setCfgTarget('spot',this)" style="text-align:left;">◎ Spot (5–X) Olimpico</button>
+            <button class="pill" id="tgt-triple" onclick="setCfgTarget('triple',this)" style="text-align:left;">⊛ Triple Spot Olimpico</button>
+            <button class="pill" id="tgt-triple-c" onclick="setCfgTarget('triple-c',this)" style="text-align:left;">⊛ Triple Spot Compound</button>
+            <button class="pill" id="tgt-spot-c" onclick="setCfgTarget('spot-c',this)" style="text-align:left;">◎ Spot Compound Ragazzi</button>
+            <button class="pill" id="tgt-hf" onclick="setCfgTarget('hf',this)" style="text-align:left;">◑ H+F Hunter & Field</button>
+            <button class="pill" id="tgt-3d" onclick="setCfgTarget('3d',this)" style="text-align:left;">🦌 3D (11/10/8/5)</button>
+            <button class="pill" id="tgt-cpro" onclick="setCfgTarget('cpro',this)" style="text-align:left;">🎯 Compound Pro (7–X)</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div class="field" style="margin:0;">
+          <label>N° turni</label>
+          <input type="number" id="cfg-turni" value="2" min="1" max="10" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:16px;padding:8px 12px;outline:none;width:100%;">
+        </div>
+        <div class="field" style="margin:0;">
+          <label>Volée per turno</label>
+          <input type="number" id="cfg-volee" value="6" min="1" max="20" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:16px;padding:8px 12px;outline:none;width:100%;">
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-sm btn-block" onclick="initGaraScoring()" id="btn-inizia" style="margin-bottom:14px;">▶ Inizia segnapunti</button>
+      <button class="btn btn-ghost btn-sm btn-block" onclick="resetGaraScoring()" id="btn-reset" style="margin-bottom:14px;display:none;">↺ Ricomincia</button>
+
+      <!-- SCORING UI -->
+      <div id="scoring-ui" style="display:none;">
+
+        <!-- Bersaglio SVG interattivo -->
+        <div style="text-align:center;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;" id="scoring-status">Turno 1 · Volée 1 · Freccia 1</div>
+          <div id="loupe-container" style="position:relative;display:inline-block;">
+            <div id="loupe">
+              <canvas id="loupe-canvas" width="120" height="120"></canvas>
+              <svg id="loupe-cross" viewBox="0 0 120 120" width="120" height="120" style="position:absolute;top:0;left:0;">
+                <line x1="60" y1="8" x2="60" y2="112" stroke="rgba(212,168,67,0.8)" stroke-width="1"/>
+                <line x1="8" y1="60" x2="112" y2="60" stroke="rgba(212,168,67,0.8)" stroke-width="1"/>
+                <circle cx="60" cy="60" r="4" fill="none" stroke="#d4a843" stroke-width="1.5"/>
+              </svg>
+            </div>
+            <svg id="target-svg" viewBox="0 0 300 300" width="100%" style="max-width:340px;cursor:crosshair;display:block;margin:0 auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;">
+              <g id="target-face"></g>
+              <g id="hit-markers"></g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Legenda volée -->
+        <div id="volee-legend" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;justify-content:center;"></div>
+
+        <!-- H+F: dati piazzola (solo per bersaglio hf) -->
+        <div id="hf-volee-data" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:8px;">
+          <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:8px;">📍 Dati Piazzola</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <div>
+              <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px;">N° Piazzola</label>
+              <input type="number" id="hf-piazzola" placeholder="es. 7" min="1" max="48"
+                style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:15px;padding:8px;outline:none;text-align:center;"
+                onchange="saveHFVoleeData()">
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px;">Distanza</label>
+              <input type="text" id="hf-distanza" placeholder="es. 35m"
+                style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:15px;padding:8px;outline:none;text-align:center;"
+                onchange="saveHFVoleeData()">
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px;">Visuale</label>
+              <select id="hf-visuale"
+                style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px;outline:none;"
+                onchange="saveHFVoleeData()">
+                <option value="">—</option>
+                <option>20 cm</option>
+                <option>40 cm</option>
+                <option>60 cm</option>
+                <option>80 cm</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Frecce volée corrente -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">VOLÉE CORRENTE</div>
+          <div id="current-volee-cells" style="display:flex;gap:6px;justify-content:center;margin-bottom:8px;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;color:var(--muted);">Totale volée: <span id="volee-subtotal" style="color:var(--gold);font-weight:700;">0</span></div>
+            <button class="btn btn-primary btn-sm" onclick="confirmVolee()" id="btn-confirm-volee" style="display:none;">Conferma volée →</button>
+          </div>
+        </div>
+
+        <!-- Riepilogo turni -->
+        <div id="turni-summary" style="margin-bottom:10px;"></div>
+
+        <!-- Totali -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+            <div><div style="font-size:22px;font-weight:700;color:var(--gold);" id="sc-totale">0</div><div style="font-size:10px;color:var(--muted);">TOTALE</div></div>
+            <div><div style="font-size:22px;font-weight:700;color:var(--gold);" id="sc-xcount">0</div><div style="font-size:10px;color:var(--muted);">X</div></div>
+            <div><div style="font-size:22px;font-weight:700;color:var(--gold);" id="sc-10count">0</div><div style="font-size:10px;color:var(--muted);">10+X</div></div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--muted);width:100%;margin-bottom:2px;">Inserisci manuale:</span>
+          <button class="arrow-val X" style="padding:8px 10px;font-size:13px;" onclick="registerScore('X')">X</button>
+          <button class="arrow-val" style="padding:8px 10px;font-size:13px;color:#f1c40f;border-color:#d4a843;" onclick="registerScore('11')">11</button>
+          <button class="arrow-val v10" style="padding:8px 10px;font-size:13px;" onclick="registerScore('10')">10</button>
+          <button class="arrow-val" style="padding:8px 10px;font-size:13px;" onclick="registerScore('9')">9</button>
+          <button class="arrow-val" style="padding:8px 10px;font-size:13px;" onclick="registerScore('8')">8</button>
+          <button class="arrow-val" style="padding:8px 10px;font-size:13px;" onclick="registerScore('7')">7</button>
+          <button class="arrow-val" style="padding:8px 10px;font-size:13px;" onclick="registerScore('6')">6</button>
+          <button class="arrow-val" style="padding:8px 10px;font-size:13px;" onclick="registerScore('5')">5</button>
+          <button class="arrow-val miss" style="padding:8px 10px;font-size:13px;" onclick="registerScore('M')">M</button>
+          <button class="btn btn-danger btn-sm" onclick="undoLastArrow()">↩</button>
+        </div>
+
+        <!-- Salva rosata -->
+        <div style="margin-top:8px;text-align:right;">
+          <button class="btn btn-ghost btn-sm" onclick="saveRosata()" style="font-size:12px;">📷 Salva rosata</button>
+        </div>
+
+      </div><!-- /scoring-ui -->
+    </div>
+
+    <div class="field"><label>Punteggio totale</label><input type="number" id="g-totale" placeholder="es. 678"></div>
+    <div class="field"><label>X count</label><input type="number" id="g-xcount" placeholder="es. 24"></div>
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:4px;">Analisi Post-Gara — Scheda Momenti</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">A = cosa penso · B = emozioni · E = sensazioni nel corpo · C = come mi comporto</div>
+
+    <div style="overflow-x:auto;">
+      <table id="analisi-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr>
+            <th style="background:var(--accent);color:#fff;padding:8px 6px;text-align:left;border-radius:6px 0 0 0;min-width:120px;">Momento</th>
+            <th style="background:var(--accent);color:#fff;padding:8px 6px;text-align:center;min-width:80px;">A<br><span style="font-weight:400;font-size:10px;">cosa penso</span></th>
+            <th style="background:var(--accent);color:#fff;padding:8px 6px;text-align:center;min-width:80px;">B<br><span style="font-weight:400;font-size:10px;">emozioni</span></th>
+            <th style="background:var(--accent);color:#fff;padding:8px 6px;text-align:center;min-width:80px;">E<br><span style="font-weight:400;font-size:10px;">corpo/sens.</span></th>
+            <th style="background:var(--accent);color:#fff;padding:8px 6px;text-align:center;border-radius:0 6px 0 0;min-width:80px;">C<br><span style="font-weight:400;font-size:10px;">comporto</span></th>
+          </tr>
+        </thead>
+        <tbody id="analisi-tbody">
+        </tbody>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:12px;">Scheda Riflessione Personale</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Rispondi con onestà e calma. Non ci sono risposte giuste o sbagliate.</div>
+
+    <div class="field"><label>1. Cosa ti ha insegnato questa analisi post-gara?</label>
+      <textarea id="g-riflessione-1" placeholder="Scrivi liberamente..." style="min-height:70px;"></textarea>
+    </div>
+    <div class="field"><label>2. Qual è la cosa più importante che ti porti via da questa esperienza?</label>
+      <textarea id="g-riflessione-2" placeholder="Scrivi liberamente..." style="min-height:70px;"></textarea>
+    </div>
+    <div class="field"><label>3. Quali elementi puoi utilizzare nei prossimi allenamenti o gare?</label>
+      <textarea id="g-riflessione-3" placeholder="Scrivi liberamente..." style="min-height:70px;"></textarea>
+    </div>
+    <div class="field"><label>4. Cosa hai scoperto di nuovo su di te come arciere?</label>
+      <textarea id="g-riflessione-4" placeholder="Scrivi liberamente..." style="min-height:70px;"></textarea>
+    </div>
+    <div class="field"><label>Il Mio Ancoraggio — gesto, immagine o parola che ti riporta alla concentrazione</label>
+      <textarea id="g-ancoraggio" placeholder="Descrivi o disegna il tuo ancoraggio personale..." style="min-height:60px;"></textarea>
+    </div>
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:12px;">Obiettivo pre-gara</div>
+    <div class="field"><label>Obiettivo che ti eri dato</label>
+      <textarea id="g-obj-pre" placeholder="Cosa volevi ottenere / mantenere..."></textarea>
+    </div>
+    <div class="field"><label>Valutazione post-gara</label>
+      <div class="pill-row" id="obj-esito">
+        <button class="pill" onclick="setPill('obj-esito',this)">✅ Raggiunto</button>
+        <button class="pill" onclick="setPill('obj-esito',this)">⚠️ Parziale</button>
+        <button class="pill" onclick="setPill('obj-esito',this)">❌ Non raggiunto</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" style="margin-top:20px;" onclick="saveGara()">Salva Gara</button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="closeModal('modal-nuova-gara')">Annulla</button>
+  </div>
+</div>
+
+<!-- MODAL: DETTAGLIO GARA -->
+<div class="modal-overlay" id="modal-dettaglio-gara" onclick="closeModalOut(event,'modal-dettaglio-gara')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="dettaglio-content"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-ghost btn-block" onclick="closeModal('modal-dettaglio-gara')">Chiudi</button>
+      <button class="btn btn-primary btn-block" id="btn-modifica-gara" onclick="modificaGara()">✏️ Modifica</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MODIFICA GARA -->
+<div class="modal-overlay" id="modal-modifica-gara" onclick="closeModalOut(event,'modal-modifica-gara')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Modifica Gara</div>
+
+    <div class="field"><label>Data</label><input type="date" id="mg-data"></div>
+    <div class="field"><label>Luogo</label><input type="text" id="mg-luogo" placeholder="es. Poligono di Trento"></div>
+    <div class="field"><label>Tipologia</label>
+      <select id="mg-tipo">
+        <option>Targa Indoor 18m</option><option>Targa Indoor 25m</option>
+        <option>Targa Outdoor 50m</option><option>Targa Outdoor 70m</option>
+        <option>Campo</option><option>3D</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field"><label>Tipo arco</label>
+        <select id="mg-arco" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:10px 12px;outline:none;width:100%;">
+          <option value="">—</option><option>Compound</option><option>Olimpico</option>
+          <option>Arco Nudo</option><option>Istintivo</option><option>Longbow</option>
+        </select>
+      </div>
+      <div class="field"><label>Classe età</label>
+        <select id="mg-eta" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:10px 12px;outline:none;width:100%;">
+          <option value="">—</option><option>Cuccioli</option><option>Giovanissimi</option>
+          <option>Allievi</option><option>Ragazzi</option><option>Junior</option>
+          <option>Senior</option><option>Master</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Condizioni meteo</label>
+      <select id="mg-meteo">
+        <option>☀️ Sereno</option><option>⛅ Parzialmente nuvoloso</option>
+        <option>🌧️ Pioggia</option><option>💨 Vento forte</option><option>🌡️ Caldo intenso</option>
+      </select>
+    </div>
+    <div class="field"><label>Vento</label><input type="text" id="mg-vento" placeholder="es. 3 m/s da destra"></div>
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:4px;">Punteggi</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field"><label>Punteggio totale</label><input type="number" id="mg-totale" placeholder="es. 678"></div>
+      <div class="field"><label>X count</label><input type="number" id="mg-xcount" placeholder="es. 24"></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:4px;">Analisi Momenti</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">A=cosa penso · B=emozioni · E=corpo/sensazioni · C=comporto</div>
+    <div id="mg-analisi-container"></div>
+
+    <div class="divider"></div>
+    <div class="field"><label>1. Cosa ti ha insegnato questa analisi?</label>
+      <textarea id="mg-r1" style="min-height:60px;"></textarea></div>
+    <div class="field"><label>2. Cosa ti porti via?</label>
+      <textarea id="mg-r2" style="min-height:60px;"></textarea></div>
+    <div class="field"><label>3. Cosa usare nei prossimi allenamenti?</label>
+      <textarea id="mg-r3" style="min-height:60px;"></textarea></div>
+    <div class="field"><label>4. Cosa hai scoperto di te?</label>
+      <textarea id="mg-r4" style="min-height:60px;"></textarea></div>
+    <div class="field"><label>Il Mio Ancoraggio</label>
+      <textarea id="mg-ancoraggio" style="min-height:50px;"></textarea></div>
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:10px;">Obiettivo Pre-Gara</div>
+    <div class="field"><textarea id="mg-obj-pre" style="min-height:60px;"></textarea></div>
+    <div class="field"><label>Esito obiettivo</label>
+      <div class="pill-row" id="mg-obj-esito">
+        <button class="pill" onclick="setPill('mg-obj-esito',this)">✅ Raggiunto</button>
+        <button class="pill" onclick="setPill('mg-obj-esito',this)">⚠️ Parziale</button>
+        <button class="pill" onclick="setPill('mg-obj-esito',this)">❌ Non raggiunto</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:10px;">Rosata salvata</div>
+    <div id="mg-rosata-preview" style="text-align:center;padding:10px;">
+      <span style="font-size:13px;color:var(--muted);">Nessuna rosata salvata per questa gara.</span>
+    </div>
+
+    <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="updateGara()">💾 Aggiorna Gara</button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="closeModal('modal-modifica-gara')">Annulla</button>
+  </div>
+</div>
+
+<!-- MODAL: AGGIUNGI MATERIALE -->
+<div class="modal-overlay" id="modal-add-material" onclick="closeModalOut(event,'modal-add-material')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Aggiungi Materiale</div>
+    <div class="field"><label>Nome materiale</label><input type="text" id="mat-nome" placeholder="es. Meditazione pre-gara"></div>
+    <div class="field"><label>Tipo</label>
+      <select id="mat-tipo">
+        <option value="pdf">PDF — Documento</option>
+        <option value="audio">Audio — Traccia</option>
+        <option value="video">Video — Clip</option>
+        <option value="link">Link — Risorsa web</option>
+      </select>
+    </div>
+    <div class="field"><label>Descrizione / note</label><textarea id="mat-note" placeholder="A cosa serve, quando usarlo..."></textarea></div>
+    <div class="field"><label>URL o riferimento</label><input type="url" id="mat-url" placeholder="https://..."></div>
+    <button class="btn btn-primary btn-block" onclick="saveMaterial()">Aggiungi</button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="closeModal('modal-add-material')">Annulla</button>
+  </div>
+</div>
+
+<!-- MODAL: AGGIUNGI OBIETTIVO -->
+<div class="modal-overlay" id="modal-add-obiettivo" onclick="closeModalOut(event,'modal-add-obiettivo')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuovo Obiettivo</div>
+    <div class="field"><label>Tipo obiettivo</label>
+      <div class="pill-row" id="obj-tipo" style="margin-bottom:8px;">
+        <button class="pill active" onclick="setPill('obj-tipo',this)">Stagionale</button>
+        <button class="pill" onclick="setPill('obj-tipo',this)">Per Gara</button>
+      </div>
+    </div>
+    <div class="field"><label>Descrizione obiettivo</label><input type="text" id="obj-desc" placeholder="es. Superare 680 punti outdoor"></div>
+    <div class="field"><label>Scadenza / Gara di riferimento</label><input type="text" id="obj-scad" placeholder="es. Settembre 2025 o nome gara"></div>
+    <div class="field"><label>Note / strategia per raggiungerlo</label><textarea id="obj-note" placeholder="Come intendi lavorarci..."></textarea></div>
+    <div class="field"><label>Stato</label>
+      <div class="pill-row" id="obj-stato">
+        <button class="pill active" onclick="setPill('obj-stato',this)">Pianificato</button>
+        <button class="pill" onclick="setPill('obj-stato',this)">In corso</button>
+        <button class="pill" onclick="setPill('obj-stato',this)">Raggiunto</button>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveObiettivo()">Salva Obiettivo</button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="closeModal('modal-add-obiettivo')">Annulla</button>
+  </div>
+</div>
+
+<!-- MODAL: ARROW PICKER -->
+<div class="modal-overlay" id="modal-arrow" onclick="closeModalOut(event,'modal-arrow')">
+  <div class="modal" style="padding-bottom:40px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="arrow-modal-title">Freccia 1</div>
+    <div class="arrow-picker">
+      <div class="arrow-val X" onclick="pickArrow('X')">X</div>
+      <div class="arrow-val v10" onclick="pickArrow('10')">10</div>
+      <div class="arrow-val" onclick="pickArrow('9')">9</div>
+      <div class="arrow-val" onclick="pickArrow('8')">8</div>
+      <div class="arrow-val" onclick="pickArrow('7')">7</div>
+      <div class="arrow-val" onclick="pickArrow('6')">6</div>
+      <div class="arrow-val" onclick="pickArrow('5')">5</div>
+      <div class="arrow-val" onclick="pickArrow('4')">4</div>
+      <div class="arrow-val" onclick="pickArrow('3')">3</div>
+      <div class="arrow-val" onclick="pickArrow('2')">2</div>
+      <div class="arrow-val" onclick="pickArrow('1')">1</div>
+      <div class="arrow-val miss" onclick="pickArrow('M')">M</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────
+// ── STORAGE ──────────────────────────────────────────────
+let _storage = null;
+function getStorage() {
+  if (_storage) return _storage;
+  try {
+    localStorage.setItem('__test__', '1');
+    localStorage.removeItem('__test__');
+    _storage = localStorage;
+  } catch(e) {
+    // localStorage bloccato (file locale su Safari iOS)
+    _storage = sessionStorage;
+    showStorageWarning();
+  }
+  return _storage;
+}
+function showStorageWarning() {
+  const w = document.createElement('div');
+  w.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#e74c3c;color:#fff;padding:10px 16px;font-size:13px;z-index:999;text-align:center;';
+  w.innerHTML = '⚠️ Apri l\'app da un link online per salvare i dati. <a href="https://pinevasco.netlify.app" style="color:#fff;font-weight:700;text-decoration:underline;">Oppure tocca qui</a>';
+  document.body.prepend(w);
+  setTimeout(() => w.remove(), 8000);
+}
+function lsGet(key) { try { return getStorage().getItem(key); } catch(e) { return null; } }
+function lsSet(key, val) { try { getStorage().setItem(key, val); } catch(e) { showStorageWarning(); } }
+
+const DB = {
+  profile:   JSON.parse(lsGet('arc_profile')   || '{}'),
+  gare:      JSON.parse(lsGet('arc_gare')       || '[]'),
+  materiali: JSON.parse(lsGet('arc_materiali')  || '[]'),
+  obiettivi: JSON.parse(lsGet('arc_obiettivi')  || '[]'),
+  mental:    JSON.parse(lsGet('arc_mental')     || '{}'),
+  equipment: JSON.parse(lsGet('arc_equipment')  || '{}'),
+  modifiche: JSON.parse(lsGet('arc_modifiche')  || '[]'),
+};
+function save(key) { lsSet('arc_'+key, JSON.stringify(DB[key])); }
+
+function saveHFVoleeData() {
+  if (!scoringState.hfData) scoringState.hfData = {};
+  const key = `${scoringState.turno}-${scoringState.volee}`;
+  const p = document.getElementById('hf-piazzola');
+  const di = document.getElementById('hf-distanza');
+  const vi = document.getElementById('hf-visuale');
+  if (!p || !di || !vi) return;
+  scoringState.hfData[key] = {
+    piazzola: p.value,
+    distanza: di.value,
+    visuale: vi.value,
+  };
+  saveGaraInCorso();
+}
+
+function loadHFVoleeData() {
+  if (!scoringState.hfData) scoringState.hfData = {};
+  const key = `${scoringState.turno}-${scoringState.volee}`;
+  const d = scoringState.hfData[key] || {};
+  const p = document.getElementById('hf-piazzola');
+  const di = document.getElementById('hf-distanza');
+  const vi = document.getElementById('hf-visuale');
+  if (!p || !di || !vi) return;
+  p.value = d.piazzola || '';
+  di.value = d.distanza || '';
+  vi.value = d.visuale || '';
+}
+
+// ── SCORING STATE ─────────────────────────────────────────
+let currentVolees = [];
+let scoringCfg = { turni: 2, volee: 6, frecce: 3, targetType: 'compound' };
+let scoringState = { turno: 0, volee: 0, freccia: 0, data: [], hfData: {} }; // hfData[t-v] = {piazzola, distanza, visuale}
+
+function setCfgFrecce(n, btn) {
+  document.querySelectorAll('#cfg-frecce .pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  scoringCfg.frecce = n;
+}
+
+function setCfgTarget(t, btn) {
+  document.querySelectorAll('#tgt-full,#tgt-spot,#tgt-triple,#tgt-triple-c,#tgt-spot-c,#tgt-hf,#tgt-3d,#tgt-cpro').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  scoringCfg.targetType = t;
+}
+
+// ── TARGET FACES ──────────────────────────────────────────
+function drawTarget(type) {
+  const face = document.getElementById('target-face');
+  if (!face) return;
+  if (type === 'full') {
+    face.innerHTML = drawFullFace(150, 150, 148);
+  } else if (type === 'spot') {
+    face.innerHTML = drawSpotFace(150, 150, 148);
+  } else if (type === 'triple') {
+    const r = 80;
+    face.innerHTML = `
+      <rect x="0" y="0" width="300" height="300" fill="#f0ece0" rx="8"/>
+      ${drawSpotFace(150, 82, r)}
+      ${drawSpotFace(60, 218, r)}
+      ${drawSpotFace(240, 218, r)}`;
+  } else if (type === 'triple-c') {
+    const r = 80;
+    face.innerHTML = `
+      <rect x="0" y="0" width="300" height="300" fill="#f0ece0" rx="8"/>
+      ${drawSpotFaceCompound(150, 82, r)}
+      ${drawSpotFaceCompound(60, 218, r)}
+      ${drawSpotFaceCompound(240, 218, r)}`;
+  } else if (type === 'spot-c') {
+    face.innerHTML = drawSpotFaceCompound(150, 150, 148);
+  } else if (type === 'hf') {
+    face.innerHTML = drawHFFace(150, 150, 148);
+  } else if (type === '3d') {
+    face.innerHTML = draw3DFace(150, 150, 148);
+  } else if (type === 'cpro') {
+    face.innerHTML = drawCProFace(150, 150, 148);
+  }
+}
+
+const LBL_FS = 11; // font size uniforme per tutti i bersagli
+
+function labelAt(cx, cy, midR, label, lc) {
+  const y1 = cy - midR + LBL_FS * 0.4;
+  const y2 = cy + midR + LBL_FS * 0.4;
+  let s = `<text x="${cx}" y="${y1}" text-anchor="middle" font-size="${LBL_FS}" fill="${lc}" font-weight="700">${label}</text>`;
+  if (midR > 20) s += `<text x="${cx}" y="${y2}" text-anchor="middle" font-size="${LBL_FS}" fill="${lc}" font-weight="700">${label}</text>`;
+  return s;
+}
+
+function drawFullFace(cx, cy, R) {
+  const zones = [
+    { r: R,         fill:'#f5f0e8', stroke:'#bbb',    label:'1',  lc:'#888'    },
+    { r: R*120/150, fill:'#f5f0e8', stroke:'#bbb',    label:'2',  lc:'#888'    },
+    { r: R*105/150, fill:'#888',    stroke:'#666',    label:'3',  lc:'#ddd'    },
+    { r: R*90/150,  fill:'#666',    stroke:'#444',    label:'4',  lc:'#eee'    },
+    { r: R*75/150,  fill:'#4a90d9', stroke:'#357abd', label:'5',  lc:'#fff'    },
+    { r: R*60/150,  fill:'#4a90d9', stroke:'#357abd', label:'6',  lc:'#fff'    },
+    { r: R*45/150,  fill:'#e74c3c', stroke:'#c0392b', label:'7',  lc:'#fff'    },
+    { r: R*30/150,  fill:'#e74c3c', stroke:'#c0392b', label:'8',  lc:'#fff'    },
+    { r: R*18/150,  fill:'#f1c40f', stroke:'#d4a843', label:'9',  lc:'#7a5000' },
+    { r: R*9/150,   fill:'#f1c40f', stroke:'#d4a843', label:'10', lc:'#7a5000' },
+  ];
+  let svg = `<circle cx="${cx}" cy="${cy}" r="${R+2}" fill="#e8e0d0"/>`;
+  zones.forEach(z => svg += `<circle cx="${cx}" cy="${cy}" r="${z.r}" fill="${z.fill}" stroke="${z.stroke}" stroke-width="0.8"/>`);
+  svg += `<circle cx="${cx}" cy="${cy}" r="${R*4/150}" fill="none" stroke="#c8961a" stroke-width="1.5"/>`;
+  zones.forEach((z, i) => {
+    const innerR = i < zones.length-1 ? zones[i+1].r : 0;
+    svg += labelAt(cx, cy, (z.r + innerR) / 2, z.label, z.lc);
+  });
+  return svg;
+}
+
+function drawSpotFace(cx, cy, R) {
+  const zones = [
+    { r: R,       fill:'#4a90d9', stroke:'#357abd', label:'5',  lc:'#fff'    },
+    { r: R*5/6,   fill:'#4a90d9', stroke:'#357abd', label:'6',  lc:'#fff'    },
+    { r: R*4/6,   fill:'#e74c3c', stroke:'#c0392b', label:'7',  lc:'#fff'    },
+    { r: R*3/6,   fill:'#e74c3c', stroke:'#c0392b', label:'8',  lc:'#fff'    },
+    { r: R*2/6,   fill:'#f1c40f', stroke:'#d4a843', label:'9',  lc:'#7a5000' },
+    { r: R*1.1/6, fill:'#f1c40f', stroke:'#d4a843', label:'10', lc:'#7a5000' },
+  ];
+  let svg = `<circle cx="${cx}" cy="${cy}" r="${R+2}" fill="#ccc" stroke="#bbb" stroke-width="1"/>`;
+  zones.forEach(z => svg += `<circle cx="${cx}" cy="${cy}" r="${z.r}" fill="${z.fill}" stroke="${z.stroke}" stroke-width="0.8"/>`);
+  const xR = R * 0.12;
+  svg += `<circle cx="${cx}" cy="${cy}" r="${xR}" fill="none" stroke="#c8961a" stroke-width="1.5"/>`;
+  svg += `<text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="${LBL_FS}" fill="#7a5000" font-weight="700">X</text>`;
+  zones.forEach((z, i) => {
+    const innerR = i < zones.length-1 ? zones[i+1].r : xR;
+    svg += labelAt(cx, cy, (z.r + innerR) / 2, z.label, z.lc);
+  });
+  return svg;
+}
+
+function drawSpotFaceCompound(cx, cy, R) {
+  // Spot Compound: X vale 10, cerchio 10 vale 9, poi 8,7,6,5
+  // Visivamente uguale allo spot ma con etichette diverse
+  const zones = [
+    { r: R,       fill:'#4a90d9', stroke:'#357abd', label:'5',  lc:'#fff'    },
+    { r: R*5/6,   fill:'#4a90d9', stroke:'#357abd', label:'6',  lc:'#fff'    },
+    { r: R*4/6,   fill:'#e74c3c', stroke:'#c0392b', label:'7',  lc:'#fff'    },
+    { r: R*3/6,   fill:'#e74c3c', stroke:'#c0392b', label:'8',  lc:'#fff'    },
+    { r: R*2/6,   fill:'#f1c40f', stroke:'#d4a843', label:'9',  lc:'#7a5000' },
+    { r: R*1.1/6, fill:'#f1c40f', stroke:'#d4a843', label:'9',  lc:'#7a5000' },
+  ];
+  let svg = `<circle cx="${cx}" cy="${cy}" r="${R+2}" fill="#ccc" stroke="#bbb" stroke-width="1"/>`;
+  zones.forEach(z => svg += `<circle cx="${cx}" cy="${cy}" r="${z.r}" fill="${z.fill}" stroke="${z.stroke}" stroke-width="0.8"/>`);
+  const xR = R * 0.12;
+  // X ring — vale 10
+  svg += `<circle cx="${cx}" cy="${cy}" r="${xR}" fill="#f1c40f" stroke="#c8961a" stroke-width="1.5"/>`;
+  svg += `<text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="${LBL_FS}" fill="#7a5000" font-weight="700">X</text>`;
+  // Nota sotto: X=10, 10→9
+  svg += `<text x="${cx}" y="${cy+R+12}" text-anchor="middle" font-size="7" fill="#888">X=10 · cerchio=9</text>`;
+  zones.forEach((z, i) => {
+    const innerR = i < zones.length-1 ? zones[i+1].r : xR;
+    svg += labelAt(cx, cy, (z.r + innerR) / 2, z.label, z.lc);
+  });
+  return svg;
+}
+
+function drawHFFace(cx, cy, R) {
+  const zones = [
+    { r: R*4/5,   fill:'#1a1a1a', stroke:'#555', label:'2', lc:'#bbb'    },
+    { r: R*3/5,   fill:'#222',    stroke:'#555', label:'3', lc:'#ccc'    },
+    { r: R*2/5,   fill:'#2a2a2a', stroke:'#555', label:'4', lc:'#ddd'    },
+    { r: R*1.5/5, fill:'#f1c40f', stroke:'#d4a843', label:'5', lc:'#7a5000' },
+    { r: R*0.7/5, fill:'#f1c40f', stroke:'#d4a843', label:'6', lc:'#7a5000' },
+  ];
+  let svg = `<circle cx="${cx}" cy="${cy}" r="${R+2}" fill="#111"/>`;
+  zones.forEach(z => svg += `<circle cx="${cx}" cy="${cy}" r="${z.r}" fill="${z.fill}" stroke="${z.stroke}" stroke-width="1"/>`);
+  zones.forEach((z, i) => {
+    const innerR = i < zones.length-1 ? zones[i+1].r : 0;
+    svg += labelAt(cx, cy, (z.r + innerR) / 2, z.label, z.lc);
+  });
+  return svg;
+}
+
+function draw3DFace(cx, cy, R) {
+  const zones = [
+    { r: R,        fill:'#e8d5b0', stroke:'#c4a87a', label:'5',  lc:'#8a6030' },
+    { r: R*0.65,   fill:'#e8d5b0', stroke:'#c4a87a', label:'8',  lc:'#8a6030' },
+    { r: R*0.38,   fill:'#fff',    stroke:'#ccc',    label:'10', lc:'#555'    },
+    { r: R*0.18,   fill:'#f1c40f', stroke:'#d4a843', label:'11', lc:'#7a5000' },
+  ];
+  let svg = `<ellipse cx="${cx}" cy="${cy+R*0.1}" rx="${R*0.92}" ry="${R*0.75}" fill="#c8b090" stroke="#a08060" stroke-width="1.5"/>`;
+  svg += `<ellipse cx="${cx+R*0.55}" cy="${cy-R*0.55}" rx="${R*0.22}" ry="${R*0.18}" fill="#c8b090" stroke="#a08060" stroke-width="1.5"/>`;
+  svg += `<path d="M${cx+R*0.38},${cy-R*0.2} Q${cx+R*0.5},${cy-R*0.4} ${cx+R*0.45},${cy-R*0.38}" stroke="#a08060" stroke-width="${R*0.18}" fill="none" stroke-linecap="round"/>`;
+  zones.forEach(z => svg += `<circle cx="${cx}" cy="${cy+R*0.05}" r="${z.r}" fill="${z.fill}" stroke="${z.stroke}" stroke-width="1" opacity="0.92"/>`);
+  zones.forEach((z, i) => {
+    const innerR = i < zones.length-1 ? zones[i+1].r : 0;
+    svg += labelAt(cx, cy+R*0.05, (z.r + innerR) / 2, z.label, z.lc);
+  });
+  return svg;
+}
+
+function drawCProFace(cx, cy, R) {
+  const zones = [
+    { r: R,        fill:'#e74c3c', stroke:'#c0392b', label:'7',  lc:'#fff'    },
+    { r: R*3/4,    fill:'#e74c3c', stroke:'#c0392b', label:'8',  lc:'#fff'    },
+    { r: R*2/4,    fill:'#f1c40f', stroke:'#d4a843', label:'9',  lc:'#7a5000' },
+    { r: R*1/4,    fill:'#f1c40f', stroke:'#d4a843', label:'10', lc:'#7a5000' },
+  ];
+  let svg = `<circle cx="${cx}" cy="${cy}" r="${R+3}" fill="#ccc" stroke="#bbb" stroke-width="1.5"/>`;
+  zones.forEach(z => svg += `<circle cx="${cx}" cy="${cy}" r="${z.r}" fill="${z.fill}" stroke="${z.stroke}" stroke-width="1.2"/>`);
+  const xR = R * 0.10;
+  svg += `<circle cx="${cx}" cy="${cy}" r="${xR}" fill="#f1c40f" stroke="#c8961a" stroke-width="2"/>`;
+  svg += `<text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="${LBL_FS}" fill="#7a5000" font-weight="700">X</text>`;
+  zones.forEach((z, i) => {
+    const innerR = i < zones.length-1 ? zones[i+1].r : xR;
+    svg += labelAt(cx, cy, (z.r + innerR) / 2, z.label, z.lc);
+  });
+  return svg;
+}
+
+function targetClick(event) {
+  const svg = document.getElementById('target-svg');
+  const rect = svg.getBoundingClientRect();
+  const scaleX = 300 / rect.width;
+  const scaleY = 300 / rect.height;
+  // Support both mouse and touch events
+  let clientX, clientY;
+  if (event.touches && event.touches.length > 0) {
+    clientX = event.touches[0].clientX;
+    clientY = event.touches[0].clientY;
+  } else if (event.changedTouches && event.changedTouches.length > 0) {
+    clientX = event.changedTouches[0].clientX;
+    clientY = event.changedTouches[0].clientY;
+  } else {
+    clientX = event.clientX;
+    clientY = event.clientY;
+  }
+  const x = (clientX - rect.left) * scaleX;
+  const y = (clientY - rect.top) * scaleY;
+  let score;
+  const type = scoringCfg.targetType || 'full';
+  if (type === 'triple' || type === 'triple-c') {
+    const spots = [{cx:150,cy:82,r:80},{cx:60,cy:218,r:80},{cx:240,cy:218,r:80}];
+    let best = null, bestDist = Infinity;
+    spots.forEach(s => {
+      const d = Math.sqrt((x-s.cx)**2+(y-s.cy)**2);
+      if (d < s.r && d < bestDist) { bestDist = d; best = {d, r: s.r}; }
+    });
+    if (!best) return;
+    score = type === 'triple-c'
+      ? distToScoreSpotCompound(best.d, best.r)
+      : distToScoreSpot(best.d, best.r);
+  } else if (type === 'spot') {
+    const d = Math.sqrt((x-150)**2+(y-150)**2);
+    if (d > 150) return;
+    score = distToScoreSpot(d, 148);
+  } else if (type === 'spot-c') {
+    const d = Math.sqrt((x-150)**2+(y-150)**2);
+    if (d > 150) return;
+    score = distToScoreSpotCompound(d, 148);
+  } else if (type === 'hf') {
+    const d = Math.sqrt((x-150)**2+(y-150)**2);
+    if (d > 150) return;
+    score = distToScoreHF(d, 148);
+  } else if (type === '3d') {
+    const d = Math.sqrt((x-150)**2+(y-155)**2);
+    if (d > 148) return;
+    score = distToScore3D(d, 148);
+  } else if (type === 'cpro') {
+    const d = Math.sqrt((x-150)**2+(y-150)**2);
+    if (d > 150) return;
+    score = distToScoreCPro(d, 148);
+  } else {
+    const d = Math.sqrt((x-150)**2+(y-150)**2);
+    if (d > 150) return;
+    score = distToScoreFull(d, 148);
+  }
+  if (!score) return;
+  // Blocca se la volée è già piena
+  const t = scoringState.turno, v = scoringState.volee;
+  if (!scoringState.data[t] || !scoringState.data[t][v]) return;
+  if (scoringState.data[t][v].length >= scoringCfg.frecce) return;
+  if (t >= scoringCfg.turni) return; // gara finita
+  addHitMarker(x, y, score);
+  registerScore(score);
+}
+
+
+
+function distToScoreHF(d, R) {
+  // Hunter & Field: 1-4 nere (esterno), 5-6 gialle (interno). Niente X.
+  if (d <= R*0.7/5)   return '6';
+  if (d <= R*1.5/5)   return '5';
+  if (d <= R*2/5)     return '4';
+  if (d <= R*3/5)     return '3';
+  if (d <= R*4/5)     return '2';
+  if (d <= R)         return '1';
+  return 'M';
+}
+
+function distToScore3D(d, R) {
+  if (d <= R*0.18)  return '11';
+  if (d <= R*0.38)  return '10';
+  if (d <= R*0.65)  return '8';
+  if (d <= R)       return '5';
+  return 'M';
+}
+
+function distToScoreCPro(d, R) {
+  if (d <= R*0.10)  return 'X';
+  if (d <= R*1/4)   return '10';
+  if (d <= R*2/4)   return '9';
+  if (d <= R*3/4)   return '8';
+  if (d <= R)       return '7';
+  return 'M';
+}
+
+function distToScoreSpotCompound(d, R) {
+  // Compound: X (centro piccolo) = 10, cerchio 10 = 9, poi 8,7,6,5
+  if (d <= R*0.12)    return 'X'; // X vale 10
+  if (d <= R*1.1/6)   return '9'; // cerchio 10 → vale 9
+  if (d <= R*2/6)     return '9';
+  if (d <= R*3/6)     return '8';
+  if (d <= R*4/6)     return '7';
+  if (d <= R*5/6)     return '6';
+  if (d <= R)         return '5';
+  return 'M';
+}
+
+function distToScoreSpot(d, R) {
+  if (d <= R*0.12)    return 'X';
+  if (d <= R*1.1/6)   return '10';
+  if (d <= R*2/6)     return '9';
+  if (d <= R*3/6)     return '8';
+  if (d <= R*4/6)     return '7';
+  if (d <= R*5/6)     return '6';
+  if (d <= R)         return '5';
+  return 'M';
+}
+
+// ── SALVA/RIPRISTINA STATO GARA IN CORSO ─────────────────
+let markerCoords = []; // [{x,y,score,turno,volee}]
+
+function saveGaraInCorso() {
+  if (!scoringState.data.length) return;
+  lsSet('arc_gara_in_corso', JSON.stringify({
+    cfg: scoringCfg,
+    state: scoringState,
+    markers: markerCoords
+  }));
+}
+
+function loadGaraInCorso() {
+  try {
+    const saved = lsGet('arc_gara_in_corso');
+    if (!saved) return false;
+    const { cfg, state, markers } = JSON.parse(saved);
+    if (!cfg || !state || !state.data.length) return false;
+    scoringCfg = cfg;
+    scoringState = state;
+    markerCoords = markers || [];
+    return true;
+  } catch(e) { return false; }
+}
+
+function clearGaraInCorso() {
+  markerCoords = [];
+  lsSet('arc_gara_in_corso', '');
+}
+
+function initGaraScoring() {
+  scoringCfg.turni = parseInt(document.getElementById('cfg-turni').value) || 2;
+  scoringCfg.volee = parseInt(document.getElementById('cfg-volee').value) || 6;
+  scoringState.data = [];
+  for (let t = 0; t < scoringCfg.turni; t++) {
+    scoringState.data.push([]);
+    for (let v = 0; v < scoringCfg.volee; v++) scoringState.data[t].push([]);
+  }
+  scoringState.turno = 0;
+  scoringState.volee = 0;
+  scoringState.freccia = 0;
+  scoringState.hfData = {};
+  markerCoords = [];
+  lockScoringUI(true);
+  document.getElementById('scoring-ui').style.display = 'block';
+  clearHitMarkers();
+  drawTarget(scoringCfg.targetType || 'full');
+  initTargetTouchEvents();
+  saveGaraInCorso();
+  updateScoringUI();
+}
+
+function restoreGaraInCorso() {
+  if (!loadGaraInCorso()) return;
+  lockScoringUI(true);
+  // Ripristina config UI
+  document.getElementById('cfg-turni').value = scoringCfg.turni;
+  document.getElementById('cfg-volee').value = scoringCfg.volee;
+  document.getElementById('cfg-frecce').querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent) === scoringCfg.frecce);
+  });
+  document.querySelectorAll('[id^="tgt-"]').forEach(b => {
+    b.classList.toggle('active', b.id === 'tgt-' + scoringCfg.targetType);
+  });
+  document.getElementById('scoring-ui').style.display = 'block';
+  drawTarget(scoringCfg.targetType || 'full');
+  initTargetTouchEvents();
+  // Ridisegna tutti i marker salvati
+  clearHitMarkers();
+  rebuildMarkers();
+  updateScoringUI();
+  showToast('Gara in corso ripristinata ✓');
+}
+
+function rebuildMarkers() {
+  clearHitMarkers();
+  const currentTurno = scoringState.turno;
+  markerCoords
+    .filter(m => m.turno === currentTurno)
+    .forEach(m => {
+      const g = document.getElementById('hit-markers');
+      const vi = m.volee % VOLEE_COLORS.length;
+      const strokeColor = VOLEE_COLORS[vi];
+      const marker = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      marker.classList.add('hit-marker');
+      marker.setAttribute('data-volee', `${m.turno}-${m.volee}`);
+      marker.innerHTML = `<circle cx="${m.x}" cy="${m.y}" r="5" fill="#111" opacity="0.95" stroke="${strokeColor}" stroke-width="1.5"/>`;
+      g.appendChild(marker);
+    });
+}
+
+function lockScoringUI(locked) {
+  document.getElementById('cfg-frecce').querySelectorAll('button').forEach(b => b.disabled = locked);
+  document.querySelectorAll('#tgt-full,#tgt-spot,#tgt-triple,#tgt-triple-c,#tgt-spot-c,#tgt-hf,#tgt-3d,#tgt-cpro').forEach(b => b.disabled = locked);
+  document.getElementById('cfg-turni').disabled = locked;
+  document.getElementById('cfg-volee').disabled = locked;
+  document.getElementById('btn-inizia').style.display = locked ? 'none' : '';
+  document.getElementById('btn-reset').style.display = locked ? '' : 'none';
+}
+
+
+
+// Colori bordo per distinguere le volée sulla rosata
+const VOLEE_COLORS = ['#fff','#f1c40f','#3fb950','#e74c3c','#58a6ff','#f97316','#a855f7','#06b6d4','#ec4899','#84cc16'];
+
+function addHitMarker(x, y, score) {
+  const g = document.getElementById('hit-markers');
+  const vi = scoringState.volee % VOLEE_COLORS.length;
+  const strokeColor = VOLEE_COLORS[vi];
+  const marker = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  marker.classList.add('hit-marker');
+  marker.setAttribute('data-volee', `${scoringState.turno}-${scoringState.volee}`);
+  marker.innerHTML = `
+    <circle cx="${x}" cy="${y}" r="5" fill="#111" opacity="0.95" stroke="${strokeColor}" stroke-width="1.5"/>
+  `;
+  g.appendChild(marker);
+  // Salva coordinate per ripristino
+  markerCoords.push({ x, y, score, turno: scoringState.turno, volee: scoringState.volee });
+}
+
+function clearHitMarkers() {
+  const g = document.getElementById('hit-markers');
+  if (g) g.innerHTML = '';
+}
+
+function clearMarkersForCurrentVolee() {
+  // Remove only markers from current volée (for undo)
+  const key = `${scoringState.turno}-${scoringState.volee}`;
+  document.querySelectorAll(`#hit-markers [data-volee="${key}"]`).forEach(m => m.remove());
+}
+
+function getCurrentVoleeTotalArrows() {
+  const t = scoringState.turno, v = scoringState.volee;
+  if (!scoringState.data[t]) return 0;
+  return (scoringState.data[t][v] || []).length;
+}
+
+function registerScore(val) {
+  const t = scoringState.turno;
+  const v = scoringState.volee;
+  if (!scoringState.data[t] || !scoringState.data[t][v]) return;
+  if (scoringState.data[t][v].length >= scoringCfg.frecce) return;
+  scoringState.data[t][v].push(val);
+  saveGaraInCorso();
+  updateScoringUI();
+}
+
+function undoLastArrow() {
+  let t = scoringState.turno, v = scoringState.volee;
+  if (!scoringState.data[t] || !scoringState.data[t][v] || scoringState.data[t][v].length === 0) {
+    if (v > 0) { v--; }
+    else if (t > 0) { t--; v = scoringCfg.volee - 1; }
+    else return;
+    scoringState.turno = t;
+    scoringState.volee = v;
+  }
+  if (scoringState.data[t][v].length > 0) {
+    scoringState.data[t][v].pop();
+    const key = `${t}-${v}`;
+    const markers = document.querySelectorAll(`#hit-markers [data-volee="${key}"]`);
+    if (markers.length > 0) markers[markers.length-1].remove();
+    // Rimuovi ultima coordinata salvata per questa volée
+    for (let i = markerCoords.length-1; i >= 0; i--) {
+      if (markerCoords[i].turno === t && markerCoords[i].volee === v) {
+        markerCoords.splice(i, 1);
+        break;
+      }
+    }
+    saveGaraInCorso();
+    updateScoringUI();
+  }
+}
+
+function confirmVolee() {
+  scoringState.volee++;
+  if (scoringState.volee >= scoringCfg.volee) {
+    scoringState.volee = 0;
+    scoringState.turno++;
+    clearHitMarkers();
+    // Rimuovi marker del turno precedente dalle coordinate salvate
+    const prevTurno = scoringState.turno - 1;
+    markerCoords = markerCoords.filter(m => m.turno !== prevTurno);
+  }
+  scoringState.freccia = 0;
+  saveGaraInCorso();
+  updateScoringUI();
+}
+
+function resetGaraScoring() {
+  lockScoringUI(false);
+  document.getElementById('scoring-ui').style.display = 'none';
+  scoringState = { turno:0, volee:0, freccia:0, data:[] };
+  clearHitMarkers();
+  clearGaraInCorso();
+}
+
+function scoreVal(s) {
+  if (s === 'X' || s === '10') return 10;
+  if (s === '11') return 11;
+  if (s === 'M') return 0;
+  return parseInt(s) || 0;
+}
+
+function updateScoringUI() {
+  const t = scoringState.turno, v = scoringState.volee;
+  const done = t >= scoringCfg.turni;
+  const isHF = scoringCfg.targetType === 'hf';
+
+  // Mostra/nasconde pannello H+F
+  const hfPanel = document.getElementById('hf-volee-data');
+  if (hfPanel) {
+    hfPanel.style.display = isHF && !done ? 'block' : 'none';
+    if (isHF && !done) {
+      if (!scoringState.hfData) scoringState.hfData = {};
+      loadHFVoleeData();
+    }
+  }
+
+  // Status
+  const statusEl = document.getElementById('scoring-status');
+  if (done) {
+    statusEl.textContent = '✅ Gara completata!';
+    statusEl.style.color = 'var(--success)';
+  } else {
+    statusEl.textContent = `Turno ${t+1}/${scoringCfg.turni} · Volée ${v+1}/${scoringCfg.volee} · Freccia ${(scoringState.data[t]?.[v]?.length||0)+1}/${scoringCfg.frecce}`;
+    statusEl.style.color = 'var(--muted)';
+  }
+
+  // Current volée cells
+  const cellsEl = document.getElementById('current-volee-cells');
+  cellsEl.innerHTML = '';
+  const curArrows = done ? [] : (scoringState.data[t]?.[v] || []);
+  for (let i = 0; i < scoringCfg.frecce; i++) {
+    const div = document.createElement('div');
+    div.className = 'volee-arrow-cell';
+    if (i < curArrows.length) {
+      const s = curArrows[i];
+      div.textContent = s;
+      div.classList.add('filled-' + s);
+    } else if (!done && i === curArrows.length) {
+      div.classList.add('active');
+      div.textContent = '·';
+    } else {
+      div.textContent = '·';
+    }
+    cellsEl.appendChild(div);
+  }
+
+  // Confirm button
+  const confirmBtn = document.getElementById('btn-confirm-volee');
+  const voleeFull = !done && curArrows.length >= scoringCfg.frecce;
+  confirmBtn.style.display = voleeFull ? 'flex' : 'none';
+
+  // Turni summary
+  const summaryEl = document.getElementById('turni-summary');
+  let summaryHTML = '';
+  for (let ti = 0; ti <= Math.min(t, scoringCfg.turni-1); ti++) {
+    let turnoTotal = 0, isActive = ti === t && !done;
+    for (let vi = 0; vi < scoringCfg.volee; vi++) {
+      const arr = scoringState.data[ti]?.[vi] || [];
+      arr.forEach(s => turnoTotal += scoreVal(s));
+    }
+    const volee = scoringState.data[ti] || [];
+    const voleeStr = volee.map((arr, vi) => {
+      if (!arr.length) return '';
+      const tot = arr.reduce((s,x) => s + scoreVal(x), 0);
+      const xs = arr.filter(x => x === 'X').length;
+      const hfd = isHF && scoringState.hfData ? (scoringState.hfData[`${ti}-${vi}`] || {}) : null;
+      const hfInfo = hfd && (hfd.piazzola || hfd.distanza) ?
+        `<span style="color:var(--accent2);font-size:10px;"> P${hfd.piazzola||'?'} ${hfd.distanza||''} ${hfd.visuale||''}</span>` : '';
+      return `<span style="font-size:11px;color:${vi===v&&isActive?'var(--gold)':'var(--muted)'};">${arr.join(' ')} <b style="color:var(--text);">(${tot}${xs?'/'+xs+'X':''})</b>${hfInfo}</span>`;
+    }).filter(Boolean).join(' · ');
+    summaryHTML += `<div class="turno-row ${isActive?'active':''}">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:${isActive?'var(--gold)':'var(--text)'};">Turno ${ti+1}</div>
+        <div style="font-size:11px;margin-top:3px;">${voleeStr||'<span style="color:var(--muted);">—</span>'}</div>
+      </div>
+      <div style="font-size:18px;font-weight:700;color:var(--gold);">${turnoTotal||'—'}</div>
+    </div>`;
+  }
+  summaryEl.innerHTML = summaryHTML;
+
+  // Grand totals
+  let grand = 0, xc = 0, tenC = 0;
+  scoringState.data.forEach(turno => turno.forEach(volee => volee.forEach(s => {
+    grand += scoreVal(s);
+    if (s === 'X') { xc++; tenC++; }
+    else if (s === '10') tenC++;
+  })));
+  document.getElementById('sc-totale').textContent = grand;
+  document.getElementById('sc-xcount').textContent = xc;
+  document.getElementById('sc-10count').textContent = tenC;
+
+  // Sync to form fields
+  document.getElementById('g-totale').value = grand || '';
+  document.getElementById('g-xcount').value = xc || '';
+
+  // Legenda volée sul bersaglio
+  const legend = document.getElementById('volee-legend');
+  if (legend) {
+    const t = scoringState.turno;
+    const completedVolee = scoringState.data[t] ? scoringState.data[t].filter(v => v.length > 0) : [];
+    legend.innerHTML = completedVolee.map((v, vi) => {
+      const col = VOLEE_COLORS[vi % VOLEE_COLORS.length];
+      const tot = v.reduce((s,x) => s + scoreVal(x), 0);
+      const isCur = vi === scoringState.volee;
+      return `<span style="font-size:11px;padding:2px 8px;border-radius:10px;border:2px solid ${col};color:${col};background:${isCur?'rgba(255,255,255,0.08)':'transparent'};font-weight:${isCur?'700':'400'};">V${vi+1}: ${tot}</span>`;
+    }).join('');
+  }
+
+  // Sync to currentVolees for saving
+  currentVolees = scoringState.data.flat();
+}
+
+// ── LOUPE (MAGNIFIER) ────────────────────────────────────
+// Attach touch events via JS so preventDefault works properly on Safari iOS
+let _targetAbort = null;
+
+function initTargetTouchEvents() {
+  const el = document.getElementById('target-svg');
+  if (!el) return;
+
+  // Cancel previous listeners cleanly without cloning
+  if (_targetAbort) _targetAbort.abort();
+  _targetAbort = new AbortController();
+  const sig = { signal: _targetAbort.signal, passive: false };
+
+  let lastTouchTime = 0;
+
+  el.addEventListener('touchstart', e => {
+    e.preventDefault();
+    loupeShow(e);
+  }, sig);
+
+  el.addEventListener('touchmove', e => {
+    e.preventDefault();
+    loupeMove(e);
+  }, sig);
+
+  el.addEventListener('touchend', e => {
+    e.preventDefault();
+    loupeHide(e);
+    // Debounce: ignora se stesso evento già gestito entro 300ms
+    const now = Date.now();
+    if (now - lastTouchTime < 300) return;
+    lastTouchTime = now;
+    targetClick(e);
+  }, sig);
+
+  el.addEventListener('touchcancel', e => {
+    loupeHide(e);
+  }, { signal: _targetAbort.signal });
+
+  // Mouse solo su desktop
+  el.addEventListener('click', e => {
+    if (Date.now() - lastTouchTime < 500) return; // era un touch
+    targetClick(e);
+  }, { signal: _targetAbort.signal });
+}
+const LOUPE_SIZE = 120;
+const LOUPE_ZOOM = 3.5;
+
+function drawLoupeCanvas(svgX, svgY) {
+  const canvas = document.getElementById('loupe-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const S = LOUPE_SIZE;
+  ctx.clearRect(0, 0, S, S);
+
+  // Clip to circle
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(S/2, S/2, S/2, 0, Math.PI*2);
+  ctx.clip();
+
+  // White background
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, S, S);
+
+  // Scale: how many SVG units fit in the loupe
+  const svgVisible = 300 / LOUPE_ZOOM; // SVG units visible in loupe
+  const scale = S / svgVisible; // canvas px per SVG unit
+
+  // Draw target zones using canvas (mirrors drawTarget logic)
+  const type = scoringCfg.targetType || 'full';
+  const cx = (150 - svgX) * scale + S/2;
+  const cy = (150 - svgY) * scale + S/2;
+
+  if (type === 'full') {
+    drawCanvasFullFace(ctx, cx, cy, 148 * scale);
+  } else if (type === 'spot') {
+    drawCanvasSpotFace(ctx, cx, cy, 148 * scale);
+  } else if (type === 'hf') {
+    drawCanvasHFFace(ctx, cx, cy, 148 * scale);
+  } else if (type === 'cpro') {
+    drawCanvasSpotFace(ctx, cx, cy, 148 * scale); // same structure as spot
+  } else if (type === '3d') {
+    drawCanvasSpotFace(ctx, cx, cy, 148 * scale); // simplified for loupe
+  } else if (type === 'spot-c') {
+    drawCanvasSpotFace(ctx, cx, cy, 148 * scale);
+  } else if (type === 'triple' || type === 'triple-c') {
+    const spots = [{x:150,y:82},{x:60,y:218},{x:240,y:218}];
+    spots.forEach(s => {
+      const scx = (s.x - svgX) * scale + S/2;
+      const scy = (s.y - svgY) * scale + S/2;
+      drawCanvasSpotFace(ctx, scx, scy, 80 * scale);
+    });
+  }
+
+  // Draw existing hit markers
+  const markers = document.querySelectorAll('#hit-markers circle');
+  markers.forEach((m, i) => {
+    const mx = parseFloat(m.getAttribute('cx'));
+    const my = parseFloat(m.getAttribute('cy'));
+    const mcx = (mx - svgX) * scale + S/2;
+    const mcy = (my - svgY) * scale + S/2;
+    const fill = m.getAttribute('fill');
+    ctx.beginPath();
+    ctx.arc(mcx, mcy, 5, 0, Math.PI*2);
+    ctx.fillStyle = fill || '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  ctx.restore();
+}
+
+function drawCanvasFullFace(ctx, cx, cy, R) {
+  const zones = [
+    {r:R,        fill:'#f0ece0', stroke:'#bbb'},
+    {r:R*120/150,fill:'#f0ece0', stroke:'#bbb'},
+    {r:R*105/150,fill:'#aaa',    stroke:'#888'},
+    {r:R*90/150, fill:'#777',    stroke:'#555'},
+    {r:R*75/150, fill:'#4a90d9', stroke:'#357abd'},
+    {r:R*60/150, fill:'#4a90d9', stroke:'#357abd'},
+    {r:R*45/150, fill:'#e74c3c', stroke:'#c0392b'},
+    {r:R*30/150, fill:'#e74c3c', stroke:'#c0392b'},
+    {r:R*18/150, fill:'#f1c40f', stroke:'#d4a843'},
+    {r:R*9/150,  fill:'#f1c40f', stroke:'#d4a843'},
+  ];
+  zones.forEach(z => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, z.r, 0, Math.PI*2);
+    ctx.fillStyle = z.fill;
+    ctx.fill();
+    ctx.strokeStyle = z.stroke;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  });
+  // X ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, R*4/150, 0, Math.PI*2);
+  ctx.strokeStyle = '#c8961a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function drawCanvasHFFace(ctx, cx, cy, R) {
+  const zones = [
+    {r:R,        fill:'#1a1a1a', stroke:'#555'},
+    {r:R*4/5,    fill:'#1a1a1a', stroke:'#555'},
+    {r:R*3/5,    fill:'#222',    stroke:'#555'},
+    {r:R*2/5,    fill:'#2a2a2a', stroke:'#555'},
+    {r:R*1.5/5,  fill:'#f1c40f', stroke:'#d4a843'},
+    {r:R*0.7/5,  fill:'#f1c40f', stroke:'#d4a843'},
+  ];
+  ctx.beginPath(); ctx.arc(cx, cy, R+2, 0, Math.PI*2);
+  ctx.fillStyle = '#111'; ctx.fill();
+  zones.forEach(z => {
+    ctx.beginPath(); ctx.arc(cx, cy, z.r, 0, Math.PI*2);
+    ctx.fillStyle = z.fill; ctx.fill();
+    ctx.strokeStyle = z.stroke; ctx.lineWidth = 0.8; ctx.stroke();
+  });
+}
+
+function drawCanvasSpotFace(ctx, cx, cy, R) {
+  const zones = [
+    {r:R,       fill:'#4a90d9', stroke:'#357abd'},
+    {r:R*5/6,   fill:'#4a90d9', stroke:'#357abd'},
+    {r:R*4/6,   fill:'#e74c3c', stroke:'#c0392b'},
+    {r:R*3/6,   fill:'#e74c3c', stroke:'#c0392b'},
+    {r:R*2/6,   fill:'#f1c40f', stroke:'#d4a843'},
+    {r:R*1.1/6, fill:'#f1c40f', stroke:'#d4a843'},
+  ];
+  // Background
+  ctx.beginPath();
+  ctx.arc(cx, cy, R+2, 0, Math.PI*2);
+  ctx.fillStyle = '#ddd';
+  ctx.fill();
+  zones.forEach(z => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, z.r, 0, Math.PI*2);
+    ctx.fillStyle = z.fill;
+    ctx.fill();
+    ctx.strokeStyle = z.stroke;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  });
+  // X ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, R*0.12, 0, Math.PI*2);
+  ctx.strokeStyle = '#c8961a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function getTouchSVGCoords(e) {
+  const svg = document.getElementById('target-svg');
+  const rect = svg.getBoundingClientRect();
+  const touch = e.touches[0] || e.changedTouches[0];
+  return {
+    x: (touch.clientX - rect.left) * (300 / rect.width),
+    y: (touch.clientY - rect.top) * (300 / rect.height),
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+  };
+}
+
+function loupeShow(e) {
+  const loupe = document.getElementById('loupe');
+  if (!loupe) return;
+  loupe.style.display = 'block';
+  loupeMove(e);
+}
+
+function loupeMove(e) {
+  const loupe = document.getElementById('loupe');
+  const svg = document.getElementById('target-svg');
+  if (!loupe || !svg) return;
+  const {x, y, clientX, clientY} = getTouchSVGCoords(e);
+  const rect = svg.getBoundingClientRect();
+  const containerRect = document.getElementById('loupe-container').getBoundingClientRect();
+
+  // Position loupe above the finger
+  const fingerX = clientX - containerRect.left;
+  const fingerY = clientY - containerRect.top;
+  let lx = fingerX - LOUPE_SIZE/2;
+  let ly = fingerY - LOUPE_SIZE - 20;
+  if (ly < 0) ly = fingerY + 20;
+  loupe.style.left = lx + 'px';
+  loupe.style.top = ly + 'px';
+
+  drawLoupeCanvas(x, y);
+}
+
+function loupeHide(e) {
+  const loupe = document.getElementById('loupe');
+  if (loupe) loupe.style.display = 'none';
+}
+
+// ── NAVIGATION ───────────────────────────────────────────
+const fabScreenMap = {
+  'gare': 'modal-nuova-gara',
+  'mental': 'modal-add-material',
+  'obiettivi': 'modal-add-obiettivo',
+};
+function showScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  btn.classList.add('active');
+  // Show/hide FABs — only the one inside the active screen is visible
+  document.querySelectorAll('.fab').forEach(f => f.style.display = 'none');
+  const activeScreen = document.getElementById('screen-'+name);
+  const fab = activeScreen?.querySelector('.fab');
+  if (fab) fab.style.display = 'flex';
+  if (name === 'home') renderStats();
+  if (name === 'gare') { renderGare(); checkGaraInCorso(); }
+  if (name === 'obiettivi') { renderObiettivi(); loadGoalSetting(); }
+  if (name === 'routine') loadAttivazione();
+}
+
+// ── MODALS ────────────────────────────────────────────────
+let _riprendoGara = false;
+
+function openModal(id) {
+  if (id === 'modal-nuova-gara' && !_riprendoGara) {
+    _editGaraIdx = null;
+    document.getElementById('g-data').value = new Date().toISOString().slice(0,10);
+    currentVolees = [];
+    scoringState = { turno: 0, volee: 0, freccia: 0, data: [] };
+    markerCoords = [];
+    document.getElementById('scoring-ui').style.display = 'none';
+    document.getElementById('g-totale').value = '';
+    document.getElementById('g-xcount').value = '';
+    const profileCat = DB.profile?.cat;
+    if (profileCat) {
+      const arcoSel = document.getElementById('g-arco');
+      if (arcoSel) {
+        const tipi = ['Compound','Olimpico','Arco Nudo','Istintivo','Longbow'];
+        const match = tipi.find(t => profileCat.includes(t));
+        if (match) arcoSel.value = match;
+      }
+    }
+    initAnalisiTable();
+    ['g-riflessione-1','g-riflessione-2','g-riflessione-3','g-riflessione-4','g-ancoraggio','g-obj-pre'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.value='';
+    });
+    document.querySelectorAll('#obj-esito .pill').forEach(p=>p.classList.remove('active'));
+  }
+  _riprendoGara = false;
+  document.getElementById(id).classList.add('open');
+}
+
+const ANALISI_MOMENTI = [
+  'Prima della Gara (arrivo e preparazione attrezzatura)',
+  'Durante l\'attesa (riscaldamento ecc.)',
+  'Prima Volée di gara',
+  'Momento più critico — prima parte di gara',
+  'Momento migliore — prima parte di gara',
+  'Intervallo tra le due distanze',
+  'Momento più critico — seconda parte di gara',
+  'Momento migliore — seconda parte di gara',
+  'Ultima Volée di gara',
+  'Fine Gara (sistemazione attrezzatura ecc.)',
+];
+
+function initAnalisiTable() {
+  const tbody = document.getElementById('analisi-tbody');
+  tbody.innerHTML = ANALISI_MOMENTI.map((m,i) => {
+    const isCritical = m.includes('critico') || m.includes('migliore');
+    const bg = isCritical ? 'background:rgba(31,111,235,0.05);' : '';
+    return `<tr style="${bg}">
+      <td style="padding:6px 8px;border:1px solid var(--border);vertical-align:top;">
+        <span class="momento-label" style="font-size:11px;font-weight:${isCritical?'600':'400'};color:${isCritical?'#58a6ff':'var(--text)'};">${m}</span>
+      </td>
+      ${['A','B','E','C'].map(col=>`<td style="padding:4px;border:1px solid var(--border);">
+        <textarea placeholder="..." style="width:100%;min-height:50px;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:11px;padding:4px;outline:none;resize:none;"></textarea>
+      </td>`).join('')}
+    </tr>`;
+  }).join('');
+}
+
+// ── CHECK ITEMS ───────────────────────────────────────────
+function addCheckItem(listId, inputId) {
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById(listId);
+  const item = document.createElement('div');
+  item.className = 'check-item';
+  item.innerHTML = `<div class="check-box" onclick="toggleCheck(this)"></div><span class="check-label">${val}</span>`;
+  list.appendChild(item);
+  input.value = '';
+}
+
+// ── GOAL SETTING ──────────────────────────────────────────
+function saveGoalSetting() {
+  DB.goalSetting = {
+    breve: { obj: document.getElementById('obj-breve-obj').value, come: document.getElementById('obj-breve-come').value },
+    medio: { obj: document.getElementById('obj-medio-obj').value, come: document.getElementById('obj-medio-come').value },
+    lungo: { obj: document.getElementById('obj-lungo-obj').value, come: document.getElementById('obj-lungo-come').value },
+  };
+  lsSet('arc_goalSetting', JSON.stringify(DB.goalSetting));
+  showToast('Goal Setting salvato ✓');
+}
+
+function loadGoalSetting() {
+  const gs = JSON.parse(lsGet('arc_goalSetting') || '{}');
+  if (!gs.breve) return;
+  document.getElementById('obj-breve-obj').value = gs.breve?.obj||'';
+  document.getElementById('obj-breve-come').value = gs.breve?.come||'';
+  document.getElementById('obj-medio-obj').value = gs.medio?.obj||'';
+  document.getElementById('obj-medio-come').value = gs.medio?.come||'';
+  document.getElementById('obj-lungo-obj').value = gs.lungo?.obj||'';
+  document.getElementById('obj-lungo-come').value = gs.lungo?.come||'';
+}
+
+// ── ATTIVAZIONE ───────────────────────────────────────────
+function saveAttivazione() {
+  const data = {
+    cue: document.getElementById('attiv-cue').value,
+    tecnica: getActivePill('attiv-tecnica'),
+    note: document.getElementById('attiv-note').value,
+    resetWord: document.getElementById('reset-word').value,
+  };
+  lsSet('arc_attivazione', JSON.stringify(data));
+  showToast('Attivazione salvata ✓');
+}
+
+function loadAttivazione() {
+  const d = JSON.parse(lsGet('arc_attivazione') || '{}');
+  if (d.cue) document.getElementById('attiv-cue').value = d.cue;
+  if (d.note) document.getElementById('attiv-note').value = d.note;
+  if (d.resetWord) document.getElementById('reset-word').value = d.resetWord;
+  seqItems = JSON.parse(lsGet('arc_seqtiro') || 'null') || [...DEFAULT_SEQ];
+  renderSeqTiro();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModalOut(e, id) { if (e.target.classList.contains('modal-overlay')) closeModal(id); }
+
+// ── SCALE / PILLS ─────────────────────────────────────────
+let scaleValues = {};
+function setScale(groupId, btn, val) {
+  document.getElementById(groupId).querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  scaleValues[groupId] = val;
+}
+function setPill(groupId, btn) {
+  document.getElementById(groupId).querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function getActivePill(groupId) {
+  const a = document.querySelector('#'+groupId+' .pill.active');
+  return a ? a.textContent.trim() : '';
+}
+
+// ── PROFILE ───────────────────────────────────────────────
+function saveProfile() {
+  DB.profile = {
+    nome: document.getElementById('f-nome').value,
+    club: document.getElementById('f-club').value,
+    cat: document.getElementById('f-cat').value,
+    anno: document.getElementById('f-anno').value,
+    tessera: document.getElementById('f-tessera').value,
+    setup: document.getElementById('f-setup').value,
+    punte: document.getElementById('f-punte').value,
+    note: document.getElementById('f-note-attrezzatura').value,
+  };
+  save('profile');
+  const n = DB.profile.nome || 'Arciere';
+  const initials = n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('avatar-initials').textContent = initials;
+  document.getElementById('profile-name').textContent = n;
+  document.getElementById('profile-club').textContent = DB.profile.club || 'FITARCO';
+  document.getElementById('profile-cat').textContent = DB.profile.cat;
+  showToast('Scheda salvata ✓');
+}
+function loadProfile() {
+  const p = DB.profile;
+  if (!p.nome) return;
+  document.getElementById('f-nome').value = p.nome||'';
+  document.getElementById('f-club').value = p.club||'';
+  document.getElementById('f-anno').value = p.anno||'';
+  document.getElementById('f-tessera').value = p.tessera||'';
+  document.getElementById('f-setup').value = p.setup||'';
+  document.getElementById('f-punte').value = p.punte||'';
+  document.getElementById('f-note-attrezzatura').value = p.note||'';
+  const n = p.nome||'Arciere';
+  const initials = n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('avatar-initials').textContent = initials;
+  document.getElementById('profile-name').textContent = n;
+  document.getElementById('profile-club').textContent = p.club||'FITARCO';
+  document.getElementById('profile-cat').textContent = p.cat||'Compound Maschile';
+  const catSel = document.getElementById('f-cat');
+  if (p.cat) catSel.value = p.cat;
+}
+
+// ── STATS ─────────────────────────────────────────────────
+function renderStats() {
+  const gare = DB.gare;
+  document.getElementById('stat-gare').textContent = gare.length;
+  if (gare.length === 0) { document.getElementById('stat-best').textContent='—'; document.getElementById('stat-avg').textContent='—'; return; }
+  const scores = gare.map(g=>parseInt(g.totale)).filter(s=>!isNaN(s));
+  if (scores.length === 0) return;
+  document.getElementById('stat-best').textContent = Math.max(...scores);
+  document.getElementById('stat-avg').textContent = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+}
+
+// ── GARE ─────────────────────────────────────────────────
+function saveGara() {
+  // collect analisi table
+  const momenti = [];
+  document.querySelectorAll('#analisi-tbody tr').forEach(tr => {
+    const tds = tr.querySelectorAll('textarea');
+    momenti.push({
+      momento: tr.querySelector('.momento-label')?.textContent || '',
+      A: tds[0]?.value || '',
+      B: tds[1]?.value || '',
+      E: tds[2]?.value || '',
+      C: tds[3]?.value || '',
+    });
+  });
+  const gara = {
+    id: Date.now(),
+    data: document.getElementById('g-data').value,
+    luogo: document.getElementById('g-luogo').value,
+    tipo: document.getElementById('g-tipo').value,
+    cat: (document.getElementById('g-arco')?.value||'') + (document.getElementById('g-eta')?.value ? ' · ' + document.getElementById('g-eta').value : ''),
+    arco: document.getElementById('g-arco')?.value || '',
+    eta: document.getElementById('g-eta')?.value || '',
+    meteo: document.getElementById('g-meteo').value,
+    vento: document.getElementById('g-vento').value,
+    totale: document.getElementById('g-totale').value,
+    xcount: document.getElementById('g-xcount').value,
+    volees: JSON.parse(JSON.stringify(currentVolees)),
+    analisi: { momenti },
+    riflessione: {
+      r1: document.getElementById('g-riflessione-1').value,
+      r2: document.getElementById('g-riflessione-2').value,
+      r3: document.getElementById('g-riflessione-3').value,
+      r4: document.getElementById('g-riflessione-4').value,
+      ancoraggio: document.getElementById('g-ancoraggio').value,
+    },
+    obiettivo: {
+      pre: document.getElementById('g-obj-pre').value,
+      esito: getActivePill('obj-esito'),
+    }
+  };
+  DB.gare.unshift(gara);
+  save('gare');
+  clearGaraInCorso();
+  closeModal('modal-nuova-gara');
+  renderGare();
+  renderStats();
+  showToast('Gara salvata ✓');
+  scaleValues = {};
+}
+
+function checkGaraInCorso() {
+  const saved = lsGet('arc_gara_in_corso');
+  if (!saved) return;
+  try {
+    const parsed = JSON.parse(saved);
+    if (!parsed?.cfg || !parsed?.state?.data?.length) return;
+    const existing = document.getElementById('banner-gara-in-corso');
+    if (existing) return;
+    const { cfg, state } = parsed;
+    const banner = document.createElement('div');
+    banner.id = 'banner-gara-in-corso';
+    banner.style.cssText = 'background:linear-gradient(135deg,#a855f7,#7c3fd4);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;';
+    let grand = 0;
+    state.data.forEach(t => t.forEach(v => v.forEach(s => { grand += scoreVal(s); })));
+    banner.innerHTML = `
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#fff;">⚡ Gara in corso</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.8);">Turno ${state.turno+1} · Volée ${state.volee+1} · ${grand} pt</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="riprendiGara()" style="background:#fff;color:#7c3fd4;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;">▶ Riprendi</button>
+        <button onclick="abandonaGara()" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:7px 10px;font-size:12px;cursor:pointer;">✕</button>
+      </div>`;
+    const gareList = document.getElementById('gare-list');
+    if (gareList?.parentNode) gareList.parentNode.insertBefore(banner, gareList);
+  } catch(e) {}
+}
+
+function riprendiGara() {
+  const banner = document.getElementById('banner-gara-in-corso');
+  if (banner) banner.remove();
+  _riprendoGara = true;
+  openModal('modal-nuova-gara');
+  setTimeout(() => restoreGaraInCorso(), 200);
+}
+
+function abandonaGara() {
+  const banner = document.getElementById('banner-gara-in-corso');
+  if (banner) banner.remove();
+  clearGaraInCorso();
+}
+
+function renderGare() {
+  const container = document.getElementById('gare-list');
+  if (DB.gare.length === 0) {
+    container.innerHTML = `<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg><p>Nessuna gara registrata.<br>Inizia aggiungendo la prima.</p></div>`;
+    return;
+  }
+  container.innerHTML = DB.gare.map((g,i) => {
+    const score = g.totale ? `<span style="font-size:22px;font-weight:700;color:var(--gold);">${g.totale}</span>` : '<span style="color:var(--muted)">—</span>';
+    const dateStr = g.data ? new Date(g.data+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const esito = g.obiettivo?.esito;
+    const tag = esito ? `<span class="tag ${esito.includes('Raggiunto')?'tag-green':esito.includes('Parziale')?'tag-gold':'tag-red'}" style="font-size:10px;">${esito}</span>` : '';
+    return `<div class="card" onclick="showDettaglio(${i})" style="cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:13px;color:var(--gold);font-weight:600;margin-bottom:2px;">${g.tipo}</div>
+          <div style="font-size:15px;font-weight:600;">${g.luogo||'—'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${dateStr} ${g.meteo?'· '+g.meteo:''}</div>
+          ${(g.arco||g.eta)?`<div style="font-size:11px;color:var(--accent2);margin-top:3px;">${[g.arco,g.eta].filter(Boolean).join(' · ')}</div>`:''}
+          ${tag?'<div style="margin-top:6px;">'+tag+'</div>':''}
+        </div>
+        <div style="text-align:right;">${score}${g.xcount?`<div style="font-size:11px;color:var(--muted);margin-top:2px;">${g.xcount}X</div>`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showDettaglio(i) {
+  const g = DB.gare[i];
+  const dateStr = g.data ? new Date(g.data+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'}) : '—';
+  
+  const voleesHTML = g.volees && g.volees.length > 0 ? `
+    <div class="card-title" style="margin-bottom:10px;">Volée</div>
+    ${g.volees.map((v,idx) => {
+      const tot = v.reduce((s,x)=>{if(x==='X'||x==='10')return s+10;if(x==='M'||x==='')return s;return s+parseInt(x);},0);
+      return `<div class="volee-row">
+        <span class="volee-num">${idx+1}</span>
+        <div class="volee-cells">
+          ${v.map(a=>{
+            let cls='volee-cell filled';
+            if(a==='X')cls+=' X';else if(a==='10')cls+=' s10';else if(['1','2','3','4'].includes(a))cls+=' low';
+            return `<div class="${cls}">${a||'·'}</div>`;
+          }).join('')}
+        </div>
+        <span class="volee-total">${tot||'—'}</span>
+      </div>`;
+    }).join('')}
+    <div class="divider"></div>` : '';
+
+  const momentiHTML = g.analisi?.momenti?.length ? `
+    <div class="card-title" style="margin-bottom:8px;">Analisi Momenti</div>
+    ${g.analisi.momenti.filter(m=>m.A||m.B||m.E||m.C).map(m=>`
+      <div style="margin-bottom:10px;padding:10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:6px;">${m.momento}</div>
+        ${m.A?`<div style="font-size:12px;margin-bottom:3px;"><span style="color:var(--muted)">A: </span>${m.A}</div>`:''}
+        ${m.B?`<div style="font-size:12px;margin-bottom:3px;"><span style="color:var(--muted)">B: </span>${m.B}</div>`:''}
+        ${m.E?`<div style="font-size:12px;margin-bottom:3px;"><span style="color:var(--muted)">E: </span>${m.E}</div>`:''}
+        ${m.C?`<div style="font-size:12px;"><span style="color:var(--muted)">C: </span>${m.C}</div>`:''}
+      </div>`).join('')}
+    <div class="divider"></div>` : '';
+
+  const rif = g.riflessione;
+  const rifHTML = rif && (rif.r1||rif.r2||rif.r3||rif.r4) ? `
+    <div class="card-title" style="margin-bottom:8px;">Riflessione Personale</div>
+    ${rif.r1?`<div class="card" style="padding:12px;margin-bottom:8px;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Cosa ti ha insegnato</div><p style="font-size:13px;line-height:1.6;">${rif.r1}</p></div>`:''}
+    ${rif.r2?`<div class="card" style="padding:12px;margin-bottom:8px;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Cosa ti porti via</div><p style="font-size:13px;line-height:1.6;">${rif.r2}</p></div>`:''}
+    ${rif.r3?`<div class="card" style="padding:12px;margin-bottom:8px;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Cosa usare nei prossimi allenamenti</div><p style="font-size:13px;line-height:1.6;">${rif.r3}</p></div>`:''}
+    ${rif.r4?`<div class="card" style="padding:12px;margin-bottom:8px;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Cosa hai scoperto di te</div><p style="font-size:13px;line-height:1.6;">${rif.r4}</p></div>`:''}
+    ${rif.ancoraggio?`<div class="card" style="padding:12px;margin-bottom:8px;background:rgba(201,168,76,0.05);border-color:var(--gold-dim);"><div style="font-size:11px;color:var(--gold);margin-bottom:4px;">⚓ Il Mio Ancoraggio</div><p style="font-size:13px;line-height:1.6;">${rif.ancoraggio}</p></div>`:''}
+    <div class="divider"></div>` : '';
+
+  document.getElementById('dettaglio-content').innerHTML = `
+    <div class="modal-title">${g.tipo}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">${dateStr} · ${g.luogo||'—'}</div>
+    ${(g.arco||g.eta)?`<div style="font-size:12px;color:var(--accent2);margin-bottom:12px;">${[g.arco,g.eta].filter(Boolean).join(' · ')}</div>`:'<div style="margin-bottom:12px;"></div>'}
+    <div class="stats-row" style="margin-bottom:16px;">
+      <div class="stat-box"><div class="stat-value">${g.totale||'—'}</div><div class="stat-label">TOTALE</div></div>
+      <div class="stat-box"><div class="stat-value">${g.xcount||'—'}</div><div class="stat-label">X COUNT</div></div>
+      <div class="stat-box"><div class="stat-value">${g.meteo||'—'}</div><div class="stat-label">METEO</div></div>
+    </div>
+    ${voleesHTML}
+    ${momentiHTML}
+    ${rifHTML}
+    ${g.obiettivo?.pre?`<div class="card" style="padding:12px;"><div class="card-title">Obiettivo Pre-Gara</div><p style="font-size:13px;line-height:1.6;">${g.obiettivo.pre}</p>${g.obiettivo.esito?'<div style="margin-top:8px;"><span class="tag '+(g.obiettivo.esito.includes('Raggiunto')?'tag-green':g.obiettivo.esito.includes('Parziale')?'tag-gold':'tag-red')+'">'+g.obiettivo.esito+'</span></div>':''}</div>`:''}
+    ${g.rosata?`<div class="card" style="padding:12px;"><div class="card-title">Rosata</div><img src="${g.rosata}" style="width:100%;border-radius:8px;cursor:pointer;" onclick="expandFoto(this.src)"></div>`:''}
+    <button class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="deleteGara(${i})">Elimina gara</button>
+  `;
+  document.getElementById('btn-modifica-gara').onclick = () => modificaGara(i);
+  openModal('modal-dettaglio-gara');
+}
+
+let _editGaraIdx = null;
+
+function modificaGara(i) {
+  _editGaraIdx = i;
+  const g = DB.gare[i];
+
+  document.getElementById('mg-data').value = g.data || '';
+  document.getElementById('mg-luogo').value = g.luogo || '';
+  document.getElementById('mg-tipo').value = g.tipo || 'Targa Outdoor 70m';
+  document.getElementById('mg-arco').value = g.arco || '';
+  document.getElementById('mg-eta').value = g.eta || '';
+  document.getElementById('mg-meteo').value = g.meteo || '☀️ Sereno';
+  document.getElementById('mg-vento').value = g.vento || '';
+  document.getElementById('mg-totale').value = g.totale || '';
+  document.getElementById('mg-xcount').value = g.xcount || '';
+
+  // Analisi momenti
+  const container = document.getElementById('mg-analisi-container');
+  const momenti = g.analisi?.momenti || ANALISI_MOMENTI.map(m => ({momento:m,A:'',B:'',E:'',C:''}));
+  container.innerHTML = momenti.map((m, mi) => `
+    <div style="margin-bottom:10px;padding:10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:6px;">${m.momento}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <textarea data-mi="${mi}" data-col="A" placeholder="A: cosa penso..." style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px;resize:none;min-height:44px;outline:none;">${m.A||''}</textarea>
+        <textarea data-mi="${mi}" data-col="B" placeholder="B: emozioni..." style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px;resize:none;min-height:44px;outline:none;">${m.B||''}</textarea>
+        <textarea data-mi="${mi}" data-col="E" placeholder="E: corpo/sens..." style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px;resize:none;min-height:44px;outline:none;">${m.E||''}</textarea>
+        <textarea data-mi="${mi}" data-col="C" placeholder="C: comporto..." style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px;resize:none;min-height:44px;outline:none;">${m.C||''}</textarea>
+      </div>
+    </div>`).join('');
+
+  // Riflessione
+  const r = g.riflessione || {};
+  document.getElementById('mg-r1').value = r.r1 || '';
+  document.getElementById('mg-r2').value = r.r2 || '';
+  document.getElementById('mg-r3').value = r.r3 || '';
+  document.getElementById('mg-r4').value = r.r4 || '';
+  document.getElementById('mg-ancoraggio').value = r.ancoraggio || '';
+
+  // Obiettivo
+  document.getElementById('mg-obj-pre').value = g.obiettivo?.pre || '';
+  document.querySelectorAll('#mg-obj-esito .pill').forEach(p => {
+    p.classList.toggle('active', !!(g.obiettivo?.esito && p.textContent.trim() === g.obiettivo.esito));
+  });
+
+  // Rosata
+  const rp = document.getElementById('mg-rosata-preview');
+  if (g.rosata) {
+    rp.innerHTML = `<img src="${g.rosata}" style="max-width:100%;border-radius:8px;cursor:pointer;" onclick="expandFoto(this.src)">
+      <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteRosata(${i})">🗑 Rimuovi rosata</button></div>`;
+  } else {
+    rp.innerHTML = `<span style="font-size:13px;color:var(--muted);">Nessuna rosata. Salvane una durante la gara con 📷.</span>`;
+  }
+
+  closeModal('modal-dettaglio-gara');
+  openModal('modal-modifica-gara');
+}
+
+function updateGara() {
+  if (_editGaraIdx === null) return;
+  const i = _editGaraIdx;
+  const g = DB.gare[i];
+
+  g.data    = document.getElementById('mg-data').value || g.data;
+  g.luogo   = document.getElementById('mg-luogo').value || g.luogo;
+  g.tipo    = document.getElementById('mg-tipo').value;
+  g.arco    = document.getElementById('mg-arco').value;
+  g.eta     = document.getElementById('mg-eta').value;
+  g.meteo   = document.getElementById('mg-meteo').value;
+  g.vento   = document.getElementById('mg-vento').value;
+  g.totale  = document.getElementById('mg-totale').value || g.totale;
+  g.xcount  = document.getElementById('mg-xcount').value || g.xcount;
+  g.cat     = [g.arco, g.eta].filter(Boolean).join(' · ');
+
+  // Analisi momenti
+  const momenti = [];
+  document.querySelectorAll('#mg-analisi-container [data-mi]').forEach(el => {
+    const mi = parseInt(el.dataset.mi);
+    const col = el.dataset.col;
+    if (!momenti[mi]) momenti[mi] = { momento: ANALISI_MOMENTI[mi] || '', A:'', B:'', E:'', C:'' };
+    momenti[mi][col] = el.value;
+  });
+  if (momenti.length) { if (!g.analisi) g.analisi = {}; g.analisi.momenti = momenti; }
+
+  if (!g.riflessione) g.riflessione = {};
+  const r1 = document.getElementById('mg-r1').value; if (r1) g.riflessione.r1 = r1;
+  const r2 = document.getElementById('mg-r2').value; if (r2) g.riflessione.r2 = r2;
+  const r3 = document.getElementById('mg-r3').value; if (r3) g.riflessione.r3 = r3;
+  const r4 = document.getElementById('mg-r4').value; if (r4) g.riflessione.r4 = r4;
+  const anc = document.getElementById('mg-ancoraggio').value; if (anc) g.riflessione.ancoraggio = anc;
+
+  if (!g.obiettivo) g.obiettivo = {};
+  const pre = document.getElementById('mg-obj-pre').value; if (pre) g.obiettivo.pre = pre;
+  g.obiettivo.esito = getActivePill('mg-obj-esito') || g.obiettivo.esito;
+
+  DB.gare[i] = g;
+  save('gare');
+  _editGaraIdx = null;
+  closeModal('modal-modifica-gara');
+  renderGare();
+  renderStats();
+  showToast('Gara aggiornata ✓');
+}
+
+function deleteRosata(i) {
+  DB.gare[i].rosata = null;
+  save('gare');
+  document.getElementById('mg-rosata-preview').innerHTML =
+    `<span style="font-size:13px;color:var(--muted);">Nessuna rosata.</span>`;
+  showToast('Rosata rimossa');
+}
+
+// ── SALVA ROSATA ─────────────────────────────────────────
+function saveRosata() {
+  const svg = document.getElementById('target-svg');
+  if (!svg) return;
+
+  try {
+    const clone = svg.cloneNode(true);
+    // Sfondo bianco
+    const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    bg.setAttribute('x','0'); bg.setAttribute('y','0');
+    bg.setAttribute('width','300'); bg.setAttribute('height','300');
+    bg.setAttribute('fill','#fff');
+    clone.insertBefore(bg, clone.firstChild);
+    clone.setAttribute('width','600');
+    clone.setAttribute('height','600');
+
+    const svgStr = new XMLSerializer().serializeToString(clone);
+
+    // Safari-compatible: usa data URI con btoa invece di Blob URL
+    const encoded = btoa(unescape(encodeURIComponent(svgStr)));
+    const dataUrl = 'data:image/svg+xml;base64,' + encoded;
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 600; canvas.height = 600;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0,0,600,600);
+      ctx.drawImage(img, 0, 0, 600, 600);
+      const pngUrl = canvas.toDataURL('image/png');
+
+      // Salva nella gara (indice 0 = più recente)
+      if (DB.gare.length > 0) {
+        DB.gare[0].rosata = pngUrl;
+        save('gare');
+      }
+
+      // Scarica su iOS: apri in nuova tab (Safari non supporta download attr)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        // Su iOS mostra l'immagine in un overlay — l'utente fa "Salva immagine"
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+        overlay.innerHTML = `
+          <div style="color:#fff;font-size:13px;text-align:center;">Tieni premuto sull'immagine<br>poi scegli <b>"Aggiungi a foto"</b></div>
+          <img src="${pngUrl}" style="max-width:90vw;max-height:70vh;border-radius:12px;border:2px solid var(--gold);">
+          <button onclick="this.parentElement.remove()" style="background:var(--gold);color:#1e0f35;border:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">Chiudi</button>
+        `;
+        document.body.appendChild(overlay);
+      } else {
+        const link = document.createElement('a');
+        link.download = `rosata_${new Date().toLocaleDateString('it-IT').replace(/\//g,'-')}.png`;
+        link.href = pngUrl;
+        link.click();
+      }
+      showToast('Rosata salvata ✓');
+    };
+    img.onerror = () => showToast('Errore caricamento immagine');
+    img.src = dataUrl;
+  } catch(e) {
+    showToast('Errore: ' + e.message);
+  }
+}
+
+function deleteGara(i) {
+  // confirm() non funziona su Safari iOS con file locali — uso modal interno
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:300px;width:100%;text-align:center;">
+      <div style="font-size:28px;margin-bottom:12px;">🗑️</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Elimina gara?</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Questa azione non può essere annullata.</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="this.closest('div[style]').remove()" style="flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:var(--font);font-size:14px;cursor:pointer;">Annulla</button>
+        <button id="confirm-del-btn" style="flex:1;padding:12px;border-radius:8px;border:none;background:var(--danger);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">Elimina</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#confirm-del-btn').onclick = () => {
+    overlay.remove();
+    DB.gare.splice(i, 1);
+    save('gare');
+    closeModal('modal-dettaglio-gara');
+    renderGare();
+    renderStats();
+    showToast('Gara eliminata');
+  };
+}
+
+// ── MENTAL ────────────────────────────────────────────────
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  if (el.classList.contains('checked')) {
+    el.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0d1117" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function addRoutineItem() {
+  addCheckItem('routine-list', 'new-routine-item');
+}
+
+function saveMentalNotes() {
+  DB.mental = {
+    cue: document.getElementById('mental-cue').value,
+    obj: document.getElementById('mental-obj').value,
+    reset: document.getElementById('mental-reset').value,
+  };
+  save('mental');
+  showToast('Note salvate ✓');
+}
+
+function saveMaterial() {
+  const mat = {
+    id: Date.now(),
+    nome: document.getElementById('mat-nome').value,
+    tipo: document.getElementById('mat-tipo').value,
+    note: document.getElementById('mat-note').value,
+    url: document.getElementById('mat-url').value,
+  };
+  DB.materiali.push(mat);
+  save('materiali');
+  closeModal('modal-add-material');
+  showToast('Materiale aggiunto ✓');
+}
+
+// ── OBIETTIVI ────────────────────────────────────────────
+function saveObiettivo() {
+  const tipo = getActivePill('obj-tipo').toLowerCase().includes('stagionale') ? 'stagionale' : 'gara';
+  const stato = getActivePill('obj-stato');
+  const obj = {
+    id: Date.now(),
+    tipo,
+    desc: document.getElementById('obj-desc').value,
+    scad: document.getElementById('obj-scad').value,
+    note: document.getElementById('obj-note').value,
+    stato,
+  };
+  DB.obiettivi.push(obj);
+  save('obiettivi');
+  closeModal('modal-add-obiettivo');
+  renderObiettivi();
+  showToast('Obiettivo salvato ✓');
+}
+
+function renderObiettivi() {
+  const gara = DB.obiettivi.filter(o=>o.tipo==='gara');
+  function renderList(items) {
+    if (!items.length) return '<div style="color:var(--muted);font-size:13px;padding:8px 0;">Nessun obiettivo per gara ancora. Aggiungine uno con "+".</div>';
+    return items.map(o => {
+      const tagClass = o.stato?.includes('Raggiunto') ? 'tag-green' : o.stato?.includes('corso') ? 'tag-gold' : 'tag-blue';
+      return `<div class="obiettivo-item">
+        <div class="obiettivo-header">
+          <span class="obiettivo-title">${o.desc}</span>
+          <span class="tag ${tagClass}">${o.stato||''}</span>
+        </div>
+        ${o.scad?`<div class="obiettivo-sub">${o.scad}</div>`:''}
+        ${o.note?`<div style="font-size:12px;color:var(--muted);margin-top:4px;">${o.note}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+  const garaEl = document.getElementById('obiettivi-gara');
+  if (garaEl) garaEl.innerHTML = renderList(gara);
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:'fixed', bottom:'90px', left:'50%', transform:'translateX(-50%)',
+    background:'var(--gold)', color:'#0d1117', padding:'10px 20px', borderRadius:'20px',
+    fontWeight:'600', fontSize:'13px', zIndex:'999', transition:'opacity 0.3s'
+  });
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, 1800);
+}
+
+// ── SEQUENZA DI TIRO ──────────────────────────────────────
+const DEFAULT_SEQ = [
+  'Posizione ai piedi / stance',
+  'Presa e grip neutro',
+  'Incoccata e aggancio',
+  'Ancora e allineamento',
+  'Respirazione — espira a metà',
+  'Mira e attivazione back tension',
+  'Sgancio progressivo',
+  'Follow-through',
+];
+
+let seqItems = JSON.parse(lsGet('arc_seqtiro') || 'null') || [...DEFAULT_SEQ];
+let dragSrcIdx = null;
+
+// Touch drag state
+let touchDragIdx = null;
+let touchDragEl = null;
+let touchGhost = null;
+let touchStartY = 0;
+let touchLastY = 0;
+
+function renderSeqTiro() {
+  const container = document.getElementById('seq-tiro-list');
+  if (!container) return;
+  container.innerHTML = '';
+  seqItems.forEach((text, i) => {
+    // Insert button between items
+    if (i > 0) {
+      const ins = document.createElement('div');
+      ins.className = 'seq-insert';
+      ins.innerHTML = `<div class="seq-insert-line"></div>
+        <button class="seq-insert-btn" onclick="insertSeqAt(${i})">+ inserisci qui</button>
+        <div class="seq-insert-line"></div>`;
+      container.appendChild(ins);
+    }
+    const row = document.createElement('div');
+    row.className = 'seq-item';
+    row.dataset.idx = i;
+    row.innerHTML = `
+      <span class="seq-drag" data-drag="${i}" title="Tieni premuto per spostare">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="9" cy="6" r="1.2" fill="currentColor"/><circle cx="15" cy="6" r="1.2" fill="currentColor"/>
+          <circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/>
+          <circle cx="9" cy="18" r="1.2" fill="currentColor"/><circle cx="15" cy="18" r="1.2" fill="currentColor"/>
+        </svg>
+      </span>
+      <span class="seq-num">${i + 1}</span>
+      <div class="seq-text" contenteditable="true" onblur="updateSeqText(${i}, this.textContent.trim())">${text}</div>
+      <button class="seq-del" onclick="deleteSeqItem(${i})" title="Elimina">×</button>
+    `;
+    container.appendChild(row);
+  });
+
+  // Insert at end
+  const insEnd = document.createElement('div');
+  insEnd.className = 'seq-insert';
+  insEnd.style.opacity = '0.7';
+  insEnd.innerHTML = `<div class="seq-insert-line"></div>
+    <button class="seq-insert-btn" onclick="appendSeqItem()">+ aggiungi in fondo</button>
+    <div class="seq-insert-line"></div>`;
+  container.appendChild(insEnd);
+
+  // Attach touch drag to all drag handles
+  container.querySelectorAll('.seq-drag').forEach(handle => {
+    handle.addEventListener('touchstart', onSeqTouchStart, { passive: false });
+  });
+
+  // Desktop drag (for PC/browser)
+  container.querySelectorAll('.seq-item').forEach(row => {
+    row.draggable = true;
+    row.addEventListener('dragstart', e => { dragSrcIdx = parseInt(row.dataset.idx); row.style.opacity='0.4'; e.dataTransfer.effectAllowed='move'; });
+    row.addEventListener('dragend', () => { row.style.opacity=''; removeDropIndicators(); });
+    row.addEventListener('dragover', e => { e.preventDefault(); removeDropIndicators(); row.style.borderTop='2px solid var(--accent2)'; });
+    row.addEventListener('dragleave', () => removeDropIndicators());
+    row.addEventListener('drop', e => { e.preventDefault(); const tgt = parseInt(row.dataset.idx); if(dragSrcIdx===null||dragSrcIdx===tgt)return; const m=seqItems.splice(dragSrcIdx,1)[0]; seqItems.splice(tgt,0,m); dragSrcIdx=null; renderSeqTiro(); });
+  });
+}
+
+function removeDropIndicators() {
+  document.querySelectorAll('.seq-item').forEach(r => r.style.borderTop = '');
+}
+
+function onSeqTouchStart(e) {
+  const handle = e.currentTarget;
+  const row = handle.closest('.seq-item');
+  touchDragIdx = parseInt(row.dataset.idx);
+  touchDragEl = row;
+  touchStartY = e.touches[0].clientY;
+  touchLastY = touchStartY;
+
+  // Create ghost
+  touchGhost = row.cloneNode(true);
+  touchGhost.style.cssText = `position:fixed;left:${row.getBoundingClientRect().left}px;top:${row.getBoundingClientRect().top}px;width:${row.offsetWidth}px;opacity:0.85;z-index:999;background:var(--card);border:1px solid var(--accent2);border-radius:8px;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);`;
+  document.body.appendChild(touchGhost);
+  row.style.opacity = '0.3';
+
+  document.addEventListener('touchmove', onSeqTouchMove, { passive: false });
+  document.addEventListener('touchend', onSeqTouchEnd, { once: true });
+  e.preventDefault();
+}
+
+function onSeqTouchMove(e) {
+  if (touchGhost === null) return;
+  e.preventDefault();
+  const dy = e.touches[0].clientY - touchStartY;
+  touchLastY = e.touches[0].clientY;
+  touchGhost.style.transform = `translateY(${dy}px)`;
+
+  // Highlight drop target
+  removeDropIndicators();
+  const rows = [...document.querySelectorAll('#seq-tiro-list .seq-item')];
+  rows.forEach(r => {
+    const rect = r.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    if (touchLastY < mid && parseInt(r.dataset.idx) !== touchDragIdx) {
+      r.style.borderTop = '2px solid var(--accent2)';
+    }
+  });
+}
+
+function onSeqTouchEnd(e) {
+  document.removeEventListener('touchmove', onSeqTouchMove);
+  if (touchGhost) { touchGhost.remove(); touchGhost = null; }
+  if (touchDragEl) touchDragEl.style.opacity = '';
+
+  // Find drop target
+  const rows = [...document.querySelectorAll('#seq-tiro-list .seq-item')];
+  let dropIdx = seqItems.length; // default: end
+  rows.forEach(r => {
+    const rect = r.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    if (touchLastY < mid) {
+      const ri = parseInt(r.dataset.idx);
+      if (ri < dropIdx && ri !== touchDragIdx) dropIdx = ri;
+    }
+  });
+
+  removeDropIndicators();
+  if (touchDragIdx !== null && dropIdx !== touchDragIdx) {
+    const moved = seqItems.splice(touchDragIdx, 1)[0];
+    const insertAt = dropIdx > touchDragIdx ? dropIdx - 1 : dropIdx;
+    seqItems.splice(insertAt, 0, moved);
+    saveSeqTiro(true);
+  }
+  touchDragIdx = null; touchDragEl = null;
+  renderSeqTiro();
+}
+
+function updateSeqText(i, text) {
+  if (text) seqItems[i] = text;
+}
+
+function showInputModal(title, placeholder, callback) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:320px;width:100%;">
+      <div style="font-size:15px;font-weight:600;margin-bottom:12px;">${title}</div>
+      <input id="input-modal-field" type="text" placeholder="${placeholder}"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:10px 12px;outline:none;margin-bottom:14px;">
+      <div style="display:flex;gap:10px;">
+        <button onclick="this.closest('div[style]').remove()" style="flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:var(--font);font-size:14px;cursor:pointer;">Annulla</button>
+        <button id="input-modal-ok" style="flex:1;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#a855f7,#7c3fd4);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">OK</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const field = overlay.querySelector('#input-modal-field');
+  field.focus();
+  field.addEventListener('keydown', e => { if (e.key === 'Enter') { overlay.remove(); callback(field.value.trim()); } });
+  overlay.querySelector('#input-modal-ok').onclick = () => { overlay.remove(); callback(field.value.trim()); };
+}
+
+function insertSeqAt(idx) {
+  showInputModal('Nuovo passo', 'es. Controllo allineamento...', val => {
+    if (!val) return;
+    seqItems.splice(idx, 0, val);
+    renderSeqTiro();
+    saveSeqTiro(true);
+  });
+}
+
+function appendSeqItem() {
+  const inp = document.getElementById('new-seq-item');
+  const val = inp ? inp.value.trim() : '';
+  if (val) {
+    seqItems.push(val);
+    inp.value = '';
+    renderSeqTiro();
+    saveSeqTiro(true);
+  } else {
+    showInputModal('Nuovo passo', 'es. Follow-through...', v => {
+      if (!v) return;
+      seqItems.push(v);
+      renderSeqTiro();
+      saveSeqTiro(true);
+    });
+  }
+}
+
+function deleteSeqItem(i) {
+  if (seqItems.length <= 1) return;
+  seqItems.splice(i, 1);
+  renderSeqTiro();
+  saveSeqTiro(true);
+}
+
+function saveSeqTiro(silent) {
+  document.querySelectorAll('#seq-tiro-list .seq-text').forEach((el, i) => {
+    if (seqItems[i] !== undefined && el.textContent.trim()) seqItems[i] = el.textContent.trim();
+  });
+  lsSet('arc_seqtiro', JSON.stringify(seqItems));
+  if (!silent) showToast('Sequenza salvata ✓');
+}
+
+// ── EQUIPMENT ─────────────────────────────────────────────
+DB.equipment = JSON.parse(lsGet('arc_equipment') || '{}');
+DB.modifiche = JSON.parse(lsGet('arc_modifiche') || '[]');
+
+function showComp(name, btn) {
+  document.querySelectorAll('.comp-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.comp-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('comp-'+name).classList.add('active');
+}
+
+function triggerPhoto(inputId) {
+  document.getElementById(inputId).click();
+}
+
+function loadPhoto(input, previewId, compKey) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById(previewId);
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;">
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center;">Tocca per cambiare</div>`;
+    // store base64 in equipment
+    if (!DB.equipment[compKey]) DB.equipment[compKey] = {};
+    DB.equipment[compKey].foto = e.target.result;
+    lsSet('arc_equipment', JSON.stringify(DB.equipment));
+  };
+  reader.readAsDataURL(file);
+}
+
+const COMP_FIELDS = {
+  arco:      ['marca','anno','colore','note'],
+  flettenti: ['marca','poundage','ata','brace','letoff','draw','corda','note'],
+  rest:      ['marca','altezza','offset','bottone','note'],
+  'stab-ant':['marca','lung','peso','vbar','damper','note'],
+  'stab-post':['marca','lung','peso','angolo','damper','note'],
+  mirino:    ['marca','lente','pin','18m','50m','70m','lat','note'],
+  sgancio:   ['marca','lung','trigger','patella','note'],
+  frecce:    ['marca','spine','lung','peso','punte','imp','nock','note'],
+};
+
+function saveComp(key) {
+  if (!DB.equipment[key]) DB.equipment[key] = {};
+  const fields = COMP_FIELDS[key] || [];
+  fields.forEach(f => {
+    const el = document.getElementById(key.replace('-','‑')+'-'+f) || document.getElementById(key+'-'+f);
+    if (el) DB.equipment[key][f] = el.value;
+  });
+  lsSet('arc_equipment', JSON.stringify(DB.equipment));
+  showToast('Salvato ✓');
+}
+
+function loadEquipment() {
+  Object.keys(COMP_FIELDS).forEach(key => {
+    const data = DB.equipment[key];
+    if (!data) return;
+    // restore photo
+    if (data.foto) {
+      const previewId = key+'-foto-preview';
+      const preview = document.getElementById(previewId);
+      if (preview) {
+        preview.innerHTML = `<img src="${data.foto}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;">
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center;">Tocca per cambiare</div>`;
+      }
+    }
+    // restore fields
+    const fields = COMP_FIELDS[key] || [];
+    fields.forEach(f => {
+      const el = document.getElementById(key+'-'+f);
+      if (el && data[f]) el.value = data[f];
+    });
+  });
+  renderStorico();
+}
+
+let currentModFoto = null;
+
+function loadModFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentModFoto = e.target.result;
+    const preview = document.getElementById('mod-foto-preview');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;text-align:center;">Tocca per cambiare</div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveModifica() {
+  const mod = {
+    data: document.getElementById('mod-data').value,
+    comp: document.getElementById('mod-comp').value,
+    desc: document.getElementById('mod-desc').value,
+    risultato: document.getElementById('mod-risultato').value,
+    foto: currentModFoto || null,
+  };
+  if (!mod.desc) return;
+  DB.modifiche.unshift(mod);
+  lsSet('arc_modifiche', JSON.stringify(DB.modifiche));
+  // Reset form
+  document.getElementById('mod-desc').value = '';
+  document.getElementById('mod-risultato').value = '';
+  document.getElementById('mod-data').value = new Date().toISOString().slice(0,10);
+  currentModFoto = null;
+  document.getElementById('mod-foto-preview').innerHTML = `
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <span>Tocca per aggiungere foto</span>`;
+  document.getElementById('mod-foto-input').value = '';
+  renderStorico();
+  showToast('Modifica registrata ✓');
+}
+
+function renderStorico() {
+  const el = document.getElementById('storico-list');
+  if (!el) return;
+  if (!DB.modifiche.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px;"><p>Nessuna modifica registrata ancora.</p></div>';
+    return;
+  }
+  el.innerHTML = DB.modifiche.map((m, i) => {
+    const d = m.data ? new Date(m.data+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    return `<div class="storico-item">
+      <div class="storico-item-header">
+        <span class="storico-item-comp">${m.comp}</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="storico-item-data">${d}</span>
+          <button onclick="deleteModifica(${i})" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0;">×</button>
+        </span>
+      </div>
+      <div class="storico-item-desc">${m.desc}</div>
+      ${m.risultato ? `<div class="storico-item-ris">↳ ${m.risultato}</div>` : ''}
+      ${m.foto ? `<img src="${m.foto}" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;" onclick="expandFoto(this.src)">` : ''}
+    </div>`;
+  }).join('');
+}
+
+function deleteModifica(i) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:300px;width:100%;text-align:center;">
+      <div style="font-size:28px;margin-bottom:12px;">🗑️</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Elimina modifica?</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Questa azione non può essere annullata.</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="this.closest('div[style]').remove()" style="flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:var(--font);font-size:14px;cursor:pointer;">Annulla</button>
+        <button style="flex:1;padding:12px;border-radius:8px;border:none;background:var(--danger);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;" onclick="this.closest('div[style]').remove();DB.modifiche.splice(${i},1);lsSet('arc_modifiche',JSON.stringify(DB.modifiche));renderStorico();showToast('Modifica eliminata');">Elimina</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function expandFoto(src) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `<img src="${src}" style="max-width:95%;max-height:90vh;object-fit:contain;border-radius:8px;">`;
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
+}
+
+// Update showScreen to load equipment
+const _origShowScreen = showScreen;
+
+// Patch nav for attrez
+const _navBtns = document.querySelectorAll('.nav-btn');
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  const orig = btn.getAttribute('onclick');
+  if (orig && orig.includes("'attrez'")) {
+    btn.setAttribute('onclick', "showScreenExt('attrez',this)");
+  }
+});
+function showScreenExt(name, btn) {
+  showScreen(name, btn);
+  if (name === 'attrez') loadEquipment();
+}
+
+loadProfile();
+renderStats();
+document.getElementById('mod-data').value = new Date().toISOString().slice(0,10);
+// Hide all FABs initially (home screen has no FAB)
+document.querySelectorAll('.fab').forEach(f => f.style.display = 'none');
+if (DB.mental.cue) document.getElementById('mental-cue').value = DB.mental.cue;
+if (DB.mental.obj) document.getElementById('mental-obj').value = DB.mental.obj;
+if (DB.mental.reset) document.getElementById('mental-reset').value = DB.mental.reset;
+</script>
+</body>
+</html>
