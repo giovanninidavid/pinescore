@@ -892,7 +892,7 @@ document.getElementById('pwa-icon').href = ICON_B64;
         <label>Classe età</label>
         <select id="g-eta" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:10px 12px;outline:none;width:100%;">
           <option value="">— classe —</option>
-          <option>Cuccioli</option>
+          
           <option>Giovanissimi</option>
           <option>Allievi</option>
           <option>Ragazzi</option>
@@ -1166,7 +1166,7 @@ document.getElementById('pwa-icon').href = ICON_B64;
       </div>
       <div class="field"><label>Classe età</label>
         <select id="mg-eta" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:10px 12px;outline:none;width:100%;">
-          <option value="">—</option><option>Cuccioli</option><option>Giovanissimi</option>
+          <option value="">—</option><option>Giovanissimi</option>
           <option>Allievi</option><option>Ragazzi</option><option>Junior</option>
           <option>Senior</option><option>Master</option>
         </select>
@@ -2077,7 +2077,7 @@ function drawLoupeCanvas(svgX, svgY) {
   } else if (type === 'cpro') {
     drawCanvasSpotFace(ctx, cx, cy, 148 * scale); // same structure as spot
   } else if (type === '3d') {
-    drawCanvasSpotFace(ctx, cx, cy, 148 * scale); // simplified for loupe
+    drawCanvas3DFace(ctx, cx, cy, 148 * scale);
   } else if (type === 'spot-c') {
     drawCanvasSpotFace(ctx, cx, cy, 148 * scale);
   } else if (type === 'triple' || type === 'triple-c') {
@@ -2186,6 +2186,36 @@ function drawCanvasSpotFace(ctx, cx, cy, R) {
   ctx.strokeStyle = '#c8961a';
   ctx.lineWidth = 1.5;
   ctx.stroke();
+}
+
+function drawCanvas3DFace(ctx, cx, cy, R) {
+  // 3D: zone 5=beige esterno, 8=beige medio, 10=bianco, 11=giallo centro
+  const zones = [
+    {r:R,        fill:'#c8b090', stroke:'#a08060'},
+    {r:R*0.65,   fill:'#e8d5b0', stroke:'#c4a87a'},
+    {r:R*0.38,   fill:'#fff',    stroke:'#ccc'},
+    {r:R*0.18,   fill:'#f1c40f', stroke:'#d4a843'},
+  ];
+  // Silhouette ovale corpo
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + R*0.1, R*0.92, R*0.75, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#c8b090';
+  ctx.fill();
+  ctx.strokeStyle = '#a08060';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+  // Zone concentriche
+  zones.forEach(z => {
+    ctx.beginPath();
+    ctx.arc(cx, cy + R*0.05, z.r, 0, Math.PI*2);
+    ctx.fillStyle = z.fill;
+    ctx.fill();
+    ctx.strokeStyle = z.stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
 }
 
 function getTouchSVGCoords(e) {
